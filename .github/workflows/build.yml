@@ -1,0 +1,32 @@
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ctezlifrn/h5p-cli:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        working-directory: src
+        run: npm install
+
+      - name: Build
+        working-directory: src
+        run: npm run build
+
+      - name: Pack H5P
+        run: npx h5p pack src H5P.CustomizableInteractiveBook-1.0.h5p
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: H5P.CustomizableInteractiveBook-1.0.h5p
+          path: H5P.CustomizableInteractiveBook-1.0.h5p
