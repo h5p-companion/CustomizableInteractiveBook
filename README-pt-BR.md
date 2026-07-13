@@ -23,37 +23,42 @@ npm run build
 ## Uso
 Crie um novo conteudo do tipo Interactive Book no editor H5P, adicione as paginas desejadas e organize as secoes. Cada pagina pode conter conteudo H5P diverso, e o livro cuida da navegacao e do progresso.
 
-## Bloqueio de capitulos por URL
-O bloqueio e apenas visual e de navegacao. Ele nao remove o payload do conteudo nem impede que os dados sejam carregados pelo H5P.
+## Arquitetura da política de acesso
 
-- As regras sao avaliadas pelo `pathname + query` da pagina em que o livro esta embutido.
-- Todas as regras que casarem sao aplicadas; se duas regras bloquearem o mesmo capitulo, a ultima regra que casar vence.
-- Os capitulos sao numerados a partir de 1 (1-based).
+O acesso segue uma cadeia clara de responsabilidade: **Moodle → política de acesso → H5P**. O plugin Moodle avalia cursos, grupos, notas e atividades. O Livro Interativo não conhece esses conceitos; ele apenas aplica uma política indexada pelo `subContentId` permanente de cada capítulo.
 
-### Como configurar
-Em `behaviour.lockRules`, adicione uma lista de regras com:
+Antes de criar os runtimes dos capítulos, o livro envia seu manifesto para a janela `parent` imediata:
 
-- `enabled` (true/false)
-- `matchType`: `contains`, `startsWith` ou `regex`
-- `pathPattern`: texto comparado com `pathname + query`
-- `lockedChapters`: lista de numeros de capitulos (1-based)
-- `lockedText`: texto opcional exibido no capitulo bloqueado
+```json
+{
+  "type": "h5p-customizable-interactive-book:ready",
+  "contractVersion": 1,
+  "requestId": "...",
+  "contentId": "...",
+  "library": "H5P.CustomizableInteractiveBook",
+  "chapters": [{ "id": "...", "title": "...", "position": 0, "stable": true }]
+}
+```
 
-### Exemplos
-**Contains**
-- `matchType`: `contains`
-- `pathPattern`: `/turma-a`
-- Resultado: bloqueia quando o path contiver `/turma-a`
+A plataforma pode responder com `h5p-customizable-interactive-book:policy`, usando a mesma versão do contrato, `requestId` e `contentId`, além de um mapa de capítulos com `available` e uma mensagem opcional em texto simples. A origem e a janela remetente são validadas contra o `parent` imediato. A mensagem de prontidão é reenviada durante uma janela curta.
 
-**Starts with**
-- `matchType`: `startsWith`
-- `pathPattern`: `/curso/introducao`
-- Resultado: bloqueia quando o path comecar com `/curso/introducao`
+```json
+{
+  "type": "h5p-customizable-interactive-book:policy",
+  "contractVersion": 1,
+  "requestId": "...",
+  "contentId": "...",
+  "required": true,
+  "teacherBypass": false,
+  "chapters": {
+    "uuid-do-capitulo": { "available": false, "message": "Conclua o pré-requisito." }
+  }
+}
+```
 
-**Regex**
-- `matchType`: `regex`
-- `pathPattern`: `^/curso/(basico|avancado)(\?.*)?$`
-- Resultado: bloqueia em qualquer `/curso/basico` ou `/curso/avancado`, com ou sem query
+Se o livro não estiver embutido, a origem do `parent` não puder ser determinada ou nenhuma política válida chegar em aproximadamente 2,5 segundos, é aplicada uma política allow-all. Assim, o conteúdo continua funcionando fora do Moodle.
+
+O bloqueio é pedagógico e de navegação, não um mecanismo de criptografia do conteúdo. O pacote H5P continua contendo os parâmetros de todos os capítulos. Entretanto, a biblioteca H5P filha de um capítulo bloqueado não é inicializada; esse capítulo não participa de pontuação, progresso, alterações de estado, conclusão, reset, soluções, resumo ou xAPI, e somente um placeholder acessível em texto simples é exibido.
 
 ## Suporte
 Por sua conta e risco.

@@ -24,7 +24,8 @@ class Summary extends H5P.EventDispatcher {
     this.filterActionAll = 'all';
     this.filterActionUnanswered = 'unanswered';
     this.bookCompleted = false;
-    this.tempState = JSON.stringify(this.parent.previousState && this.parent.previousState.chapters ? this.getUnlockedChapterStates(this.parent.previousState.chapters) : this.getChapterStats());
+    this.tempState = JSON.stringify(this.parent.previousState ?
+      this.getUnlockedChapterStates(this.parent.previousState) : this.getChapterStats());
 
     parent.on('bookCompleted', event => this.setBookComplete(event.data.completed));
     parent.on('toggleMenu', () => {
@@ -73,7 +74,8 @@ class Summary extends H5P.EventDispatcher {
   }
 
   getUnlockedChapters() {
-    return this.chapters.filter(chapter => !chapter.locked);
+    return this.chapters.filter(chapter =>
+      chapter.available !== false && !chapter.locked && chapter.instance);
   }
 
   /**
@@ -255,13 +257,13 @@ class Summary extends H5P.EventDispatcher {
       uncompletedInteractions += chapter.tasksLeft;
     }
     const totalScore = unlockedChapters.reduce((accumulator, chapter) => {
-      if (typeof chapter.instance.getScore === 'function') {
+      if (chapter.instance && typeof chapter.instance.getScore === 'function') {
         return accumulator + chapter.instance.getScore();
       }
       return accumulator;
     }, 0);
     const totalMaxScore = unlockedChapters.reduce((accumulator, chapter) => {
-      if (typeof chapter.instance.getMaxScore === 'function') {
+      if (chapter.instance && typeof chapter.instance.getMaxScore === 'function') {
         return accumulator + chapter.instance.getMaxScore();
       }
       return accumulator;
@@ -344,10 +346,15 @@ class Summary extends H5P.EventDispatcher {
     wrapper.classList.add('h5p-interactive-book-summary-buttons');
     this.checkTheAnswerIsUpdated();
 
-    if (this.parent.isSubmitButtonEnabled && this.parent.isAnswerUpdated) {
+    if (this.parent.getAvailableRuntimeChapters().length > 0 &&
+      this.parent.isSubmitButtonEnabled && this.parent.isAnswerUpdated) {
       const submitButton = this.addButton('icon-paper-pencil', this.l10n.submitReport);
       submitButton.classList.add('h5p-interactive-book-summary-submit');
       submitButton.onclick = () => {
+        if (this.parent.getAvailableRuntimeChapters().length === 0) {
+          return;
+        }
+
         this.trigger('submitted');
         this.parent.triggerXAPIScored(this.parent.getScore(), this.parent.getMaxScore(), 'completed');
         wrapper.classList.add('submitted');
@@ -511,7 +518,7 @@ class Summary extends H5P.EventDispatcher {
     header.onclick = () => {
       const newChapter = {
         h5pbookid: this.parent.contentId,
-        chapter: `h5p-interactive-book-chapter-${chapter.instance.subContentId}`,
+        chapter: `h5p-interactive-book-chapter-${chapter.id}`,
         section: `top`,
       };
       this.parent.trigger("newChapter", newChapter);
@@ -534,7 +541,7 @@ class Summary extends H5P.EventDispatcher {
     let {
       sectionElements: sections,
       hasUnansweredInteractions
-    } = this.createSectionList(chapter.sections.filter(section => section.isTask), chapter.instance.subContentId);
+    } = this.createSectionList(chapter.sections.filter(section => section.isTask), chapter.id);
 
     if ( hasUnansweredInteractions === false) {
       wrapper.classList.add('h5p-interactive-book-summary-no-interactions');
@@ -668,13 +675,13 @@ class Summary extends H5P.EventDispatcher {
 
     const unlockedChapters = this.getUnlockedChapters();
     const totalScore = unlockedChapters.reduce((accumulator, chapter) => {
-      if (typeof chapter.instance.getScore === 'function') {
+      if (chapter.instance && typeof chapter.instance.getScore === 'function') {
         return accumulator + chapter.instance.getScore();
       }
       return accumulator;
     }, 0);
     const totalMaxScore = unlockedChapters.reduce((accumulator, chapter) => {
-      if (typeof chapter.instance.getMaxScore === 'function') {
+      if (chapter.instance && typeof chapter.instance.getMaxScore === 'function') {
         return accumulator + chapter.instance.getMaxScore();
       }
       return accumulator;
@@ -756,37 +763,9 @@ class Summary extends H5P.EventDispatcher {
    * Compare previous and current states of children to notice changes
    */
   checkTheAnswerIsUpdated() {
-    const chapters = this.getChapterStats();
-    const previousState = JSON.parse(this.tempState);
-    for (const index of chapters.keys()) {
-      let previousStateInstance = previousState[index].state.instances;
-      let currentStateInstance = chapters[index].state.instances;
-      let currentTaskDone = chapters[index].sections;
-      for (const internalIndex of previousStateInstance.keys()) {
-        // Skip null and undefined
-        if (previousStateInstance[internalIndex] === null || previousStateInstance[internalIndex] === undefined) {
-          continue;
-        }
-
-        // Compare array type data
-        if (Array.isArray(previousStateInstance[internalIndex]) &&
-          !this.compareStates(previousStateInstance[internalIndex], currentStateInstance[internalIndex]) &&
-          currentTaskDone[internalIndex].taskDone) {
-          this.parent.isAnswerUpdated = true;
-        }
-        // Compare object type data
-        if (typeof (previousStateInstance[internalIndex]) === 'object' &&
-          !Array.isArray(previousStateInstance[internalIndex]) &&
-          JSON.stringify(previousStateInstance[internalIndex]) !== JSON.stringify(currentStateInstance[internalIndex]) &&
-          currentTaskDone[internalIndex].taskDone) {
-          this.parent.isAnswerUpdated = true;
-        }
-      }
-
-      // Break the entire loop even if one content type has updated value
-      if (this.parent.isAnswerUpdated) {
-        break;
-      }
+    const currentState = JSON.stringify(this.getChapterStats());
+    if (currentState !== this.tempState) {
+      this.parent.isAnswerUpdated = true;
     }
   }
 
@@ -799,19 +778,31 @@ class Summary extends H5P.EventDispatcher {
     return this.getUnlockedChapters()
       .filter(chapter => !chapter.isSummary)
       .map(chapter => ({
+        id: chapter.id,
+        position: chapter.position,
         sections: chapter.sections.map(section => ({taskDone: section.taskDone})),
-        state: chapter.instance.getCurrentState()
+        state: typeof chapter.instance.getCurrentState === 'function' ?
+          chapter.instance.getCurrentState() || {} : {}
       }));
   }
 
-  getUnlockedChapterStates(previousChapters = []) {
-    return previousChapters.filter((chapterState, index) => {
-      const chapter = this.chapters[index];
-      if (!chapter) {
-        return false;
-      }
-      return !chapter.locked;
-    });
+  getUnlockedChapterStates(previousState = {}) {
+    const availableChapters = this.getUnlockedChapters()
+      .filter(chapter => !chapter.isSummary);
+    const chaptersById = previousState.chaptersById;
+    if (chaptersById && typeof chaptersById === 'object' && !Array.isArray(chaptersById)) {
+      return availableChapters
+        .filter(chapter => Object.prototype.hasOwnProperty.call(chaptersById, chapter.id))
+        .map(chapter => chaptersById[chapter.id]);
+    }
+
+    const previousChapters = Array.isArray(previousState.chapters) ?
+      previousState.chapters : [];
+    return availableChapters.map(chapter => {
+      const chapterState = previousChapters[chapter.position];
+      const persistedId = chapterState?.id || chapterState?.subContentId;
+      return persistedId && persistedId !== chapter.id ? null : chapterState;
+    }).filter(chapterState => !!chapterState);
   }
 
   /**

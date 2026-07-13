@@ -188,6 +188,27 @@
       "default": "Pontuação total"
     },
     {
+      "label": "Tradução para \"Capítulo bloqueado\"",
+      "default": "Capítulo bloqueado"
+    },
+    {
+      "label": "Tradução para \"Carregando política de acesso\"",
+      "default": "Carregando política de acesso…"
+    },
+    {
+      "label": "Tradução para \"Este capítulo está indisponível\"",
+      "default": "Este capítulo está indisponível."
+    },
+    {
+      "label": "Descrição acessível de um capítulo bloqueado",
+      "description": "@title será substituído pelo título e @message pela mensagem de acesso.",
+      "default": "Capítulo bloqueado: @title. @message"
+    },
+    {
+      "label": "Tradução para \"Nenhum capítulo está disponível\"",
+      "default": "Nenhum capítulo está disponível no momento."
+    },
+    {
       "label": "Textos de acessibilidade",
       "fields": [
         {

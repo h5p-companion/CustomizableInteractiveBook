@@ -190,32 +190,6 @@ div.h5p-column-content.h5p-video::before {
   z-index: 1;
 }
 
-.h5p-interactive-book-chapter-locked {
-  filter: grayscale(100%) brightness(0.9);
-}
-
-.h5p-interactive-book-chapter-locked-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255,255,255,0.6);
-  z-index: 50;
-  pointer-events: auto; 
-}
-
-.h5p-interactive-book-chapter-locked-overlay .cadeado {
-  font-size: 1.1rem;
-  padding: .6rem 1rem;
-  background: rgba(0,0,0,0.7);
-  color: #fff;
-  border-radius: 8px;
-}
-
 .h5p-interactive-book-chapter-locked-message {
   display: flex;
   justify-content: center;
@@ -227,6 +201,20 @@ div.h5p-column-content.h5p-video::before {
   background: #f5f5f5;
   border: 2px dashed #bbb;
   border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+
+  &:focus {
+    outline: 3px solid var(--color-base, #1768c4);
+    outline-offset: 3px;
+  }
+}
+
+.h5p-interactive-book-loading {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 12rem;
   padding: 2rem;
   text-align: center;
 }

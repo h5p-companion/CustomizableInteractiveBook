@@ -18,6 +18,43 @@ Within a particular ecosystem, there may be a common way of installing things, s
 ## Usage
 Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
 
+## Host access policy architecture
+
+Access follows a one-way responsibility chain: **Moodle → access policy → H5P**. The Moodle plugin is responsible for evaluating courses, groups, grades and activities. The Interactive Book does not know those concepts; it only applies a policy indexed by each chapter's permanent `subContentId`.
+
+Before creating chapter runtimes, the book sends its manifest to the immediate parent window:
+
+```json
+{
+  "type": "h5p-customizable-interactive-book:ready",
+  "contractVersion": 1,
+  "requestId": "...",
+  "contentId": "...",
+  "library": "H5P.CustomizableInteractiveBook",
+  "chapters": [{ "id": "...", "title": "...", "position": 0, "stable": true }]
+}
+```
+
+The host may answer with `h5p-customizable-interactive-book:policy`, using the same contract version, request ID and content ID, and a chapter map containing `available` and an optional plain-text `message`. Source window and origin are validated against the immediate parent. The ready message is retried during a short window.
+
+```json
+{
+  "type": "h5p-customizable-interactive-book:policy",
+  "contractVersion": 1,
+  "requestId": "...",
+  "contentId": "...",
+  "required": true,
+  "teacherBypass": false,
+  "chapters": {
+    "chapter-uuid": { "available": false, "message": "Complete the prerequisite." }
+  }
+}
+```
+
+If the book is not embedded, the parent origin cannot be determined, or no valid policy arrives within approximately 2.5 seconds, the book uses an allow-all policy. This keeps the content functional outside Moodle.
+
+The restriction is pedagogical and navigational, not a content-encryption mechanism. An H5P package still contains every chapter parameter. For a blocked chapter, however, its child H5P library is not initialized, does not contribute to score, progress, state changes, completion, reset, solutions, summary or xAPI, and only an accessible plain-text placeholder is displayed.
+
 ## Support
 Your own risk.
 

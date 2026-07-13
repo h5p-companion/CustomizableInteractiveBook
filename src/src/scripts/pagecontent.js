@@ -139,8 +139,44 @@ class PageContent extends H5P.EventDispatcher {
     const columnContent = columnNode.getElementsByClassName('h5p-column-content');
 
     for (let i = 0; i < sections.length; i++) {
-      columnContent[i].id = `h5p-interactive-book-section-${sections[i].instance.subContentId}`;
+      if (columnContent[i] && sections[i].instance?.subContentId) {
+        columnContent[i].id = `h5p-interactive-book-section-${sections[i].instance.subContentId}`;
+      }
     }
+  }
+
+  /**
+   * Find persisted state for a chapter without coupling it to its current position.
+   *
+   * State saved with chapter IDs takes precedence. The positional lookup is kept
+   * exclusively for state produced by older versions of the library.
+   *
+   * @param {object} chapter Chapter descriptor.
+   * @return {object|null} Persisted chapter state.
+   */
+  getPreviousChapterState(chapter) {
+    if (!this.previousState || !chapter) {
+      return null;
+    }
+
+    const chaptersById = this.previousState.chaptersById;
+    if (chaptersById && typeof chaptersById === 'object' && !Array.isArray(chaptersById)) {
+      return Object.prototype.hasOwnProperty.call(chaptersById, chapter.id) ?
+        chaptersById[chapter.id] : null;
+    }
+
+    const legacyState = Array.isArray(this.previousState.chapters) ?
+      this.previousState.chapters[chapter.position] : null;
+    if (!legacyState || typeof legacyState !== 'object') {
+      return null;
+    }
+
+    const persistedId = legacyState.id || legacyState.subContentId;
+    if (persistedId && persistedId !== chapter.id) {
+      return null;
+    }
+
+    return legacyState;
   }
 
   /**
@@ -150,6 +186,24 @@ class PageContent extends H5P.EventDispatcher {
   preloadChapter(chapterIndex) {
     this.initializeChapter(chapterIndex);
     this.initializeChapter(chapterIndex + 1);
+  }
+
+  /**
+   * Move keyboard focus to an active locked chapter explanation.
+   *
+   * @param {number} chapterIndex Chapter index.
+   */
+  focusLockedPlaceholder(chapterIndex = this.parent.getActiveChapter()) {
+    const chapter = this.chapters[chapterIndex];
+    if (!chapter?.locked) {
+      return;
+    }
+
+    const placeholder = this.columnNodes[chapterIndex]
+      ?.querySelector('.h5p-interactive-book-chapter-locked-message');
+    if (placeholder) {
+      window.requestAnimationFrame(() => placeholder.focus());
+    }
   }
 
   /**
@@ -163,8 +217,12 @@ class PageContent extends H5P.EventDispatcher {
     }
 
     const chapter = this.chapters[chapterIndex];
-    if ( chapter.isSummary) {
+    if (chapter.isSummary) {
       const columnNode = this.columnNodes[chapterIndex];
+
+      if (!chapter.instance) {
+        return;
+      }
 
       if (chapter.isInitialized) {
         chapter.instance.setChapters(this.getChapters(false));
@@ -175,9 +233,12 @@ class PageContent extends H5P.EventDispatcher {
       chapter.isInitialized = true;
       return;
     }
-    if (this.parent.isChapterLocked(chapterIndex)) {
+    if (chapter.locked) {
+      if (chapter.isInitialized) {
+        return;
+      }
+
       const columnNode = this.columnNodes[chapterIndex];
-      const lockedText = this.parent.params?.chapters?.[chapterIndex]?.lockSettings?.lockedText || this.parent.defaultLockedText;
 
       while (columnNode.firstChild) {
         columnNode.removeChild(columnNode.firstChild);
@@ -185,12 +246,15 @@ class PageContent extends H5P.EventDispatcher {
 
       const message = document.createElement('div');
       message.className = 'h5p-interactive-book-chapter-locked-message';
-      message.innerHTML = lockedText;
+      message.setAttribute('role', 'status');
+      message.setAttribute('aria-live', 'polite');
+      message.setAttribute('tabindex', '-1');
+      message.textContent = chapter.lockedMessage;
       columnNode.appendChild(message);
       chapter.isInitialized = true;
       return;
     }
-    if (!chapter.isInitialized) {
+    if (!chapter.isInitialized && chapter.instance) {
       const columnNode = this.columnNodes[chapterIndex];
 
       // Attach
@@ -198,7 +262,7 @@ class PageContent extends H5P.EventDispatcher {
       this.injectSectionId(chapter.sections, columnNode);
 
       if (this.behaviour.progressIndicators && !this.behaviour.progressAuto) {
-        columnNode.appendChild(this.createChapterReadCheckbox(!!this.previousState?.chapters?.[chapterIndex].completed));
+        columnNode.appendChild(this.createChapterReadCheckbox(chapter.completed));
       }
 
       chapter.isInitialized = true;
@@ -228,52 +292,78 @@ class PageContent extends H5P.EventDispatcher {
     const chapters = [];
     this.chapters = chapters;
 
-    // Go through all columns and initialise them
+    // Create each descriptor before deciding whether its H5P content may run.
     for (let i = 0; i < config.chapters.length; i++) {
+      const manifestChapter = this.parent.chapterManifest[i];
+      if (!manifestChapter) {
+        continue;
+      }
+
       const columnNode = document.createElement('div');
-
-      const instanceContentData = {
-        parent: self,
-        previousState: (previousState) ? previousState.chapters[i].state : {}
-      };
-      const newInstance = H5P.newRunnable(config.chapters[i], contentId, undefined, undefined, instanceContentData);
-      this.parent.bubbleUp(newInstance, 'resize', this.parent);
-
+      const available = this.parent.accessController.isAvailable(manifestChapter.id);
+      const policyMessage = this.parent.accessController.getMessage(manifestChapter.id);
+      const fallbackMessage = this.parent.accessController.hasAvailableChapters() ?
+        this.l10n.chapterUnavailable : this.l10n.noAvailableChapters;
       const chapter = {
+        id: manifestChapter.id,
+        title: manifestChapter.title,
+        position: manifestChapter.position,
+        available,
+        locked: !available,
+        lockedMessage: policyMessage || fallbackMessage,
+        instance: null,
+        sections: [],
         isInitialized: false,
-        instance: newInstance,
-        title: config.chapters[i].metadata.title,
-        completed: (previousState) ? previousState.chapters[i].completed : false,
-        tasksLeft: (previousState) ? previousState.chapters[i].tasksLeft : 0,
         isSummary: false,
-        sections: newInstance.getInstances().map((instance, contentIndex) => ({
-          content: config.chapters[i].params.content[contentIndex].content,
-          instance: instance,
-          isTask: false
-        }))
+        completed: false,
+        maxTasks: 0,
+        tasksLeft: 0
       };
+      const chapterState = this.getPreviousChapterState(chapter);
+      chapter.completed = chapterState?.completed === true;
 
       columnNode.classList.add('h5p-interactive-book-chapter');
-      columnNode.id = `h5p-interactive-book-chapter-${newInstance.subContentId}`;
+      columnNode.id = `h5p-interactive-book-chapter-${chapter.id}`;
+      if (chapter.locked) {
+        columnNode.classList.add('h5p-interactive-book-chapter-locked');
+      }
 
-      chapter.maxTasks = 0;
-      chapter.tasksLeft = 0;
+      if (chapter.available) {
+        const instanceContentData = {
+          parent: self,
+          previousState: chapterState?.state && typeof chapterState.state === 'object' ?
+            chapterState.state : {}
+        };
+        const newInstance = H5P.newRunnable(
+          config.chapters[i], contentId, undefined, undefined, instanceContentData
+        );
+        chapter.instance = newInstance;
+        this.parent.bubbleUp(newInstance, 'resize', this.parent);
 
-      // Find sections with tasks and tracks them
-      chapter.sections.forEach((section, index) => {
-        if (H5P.CustomizableColumn.isTask(section.instance)) {
-          section.isTask = true;
-          chapter.maxTasks++;
-          chapter.tasksLeft++;
+        const instances = typeof newInstance.getInstances === 'function' ?
+          newInstance.getInstances() : [];
+        chapter.sections = instances.map((instance, contentIndex) => ({
+          content: config.chapters[i].params.content[contentIndex].content,
+          instance,
+          isTask: false
+        }));
 
-          if (this.behaviour.progressIndicators) {
-            section.taskDone = (previousState) ? previousState.chapters[i].sections[index].taskDone : false;
-            if (section.taskDone) {
-              chapter.tasksLeft--;
+        // Find sections with tasks and track them.
+        chapter.sections.forEach((section, index) => {
+          if (H5P.CustomizableColumn.isTask(section.instance)) {
+            section.isTask = true;
+            chapter.maxTasks++;
+            chapter.tasksLeft++;
+
+            if (this.behaviour.progressIndicators) {
+              section.taskDone = chapterState?.sections?.[index]?.taskDone === true;
+              if (section.taskDone) {
+                chapter.tasksLeft--;
+              }
             }
           }
-        }
-      });
+        });
+      }
 
       // Register both the HTML-element and the H5P-element
       chapters.push(chapter);
@@ -291,17 +381,24 @@ class PageContent extends H5P.EventDispatcher {
       this.parent.bubbleUp(newInstance, 'resize', this.parent);
 
       const chapter = {
-        isInitialized: false,
-        instance: newInstance,
+        id: 'summary',
         title: this.l10n.summaryHeader,
+        position: chapters.length,
+        available: true,
+        locked: false,
+        lockedMessage: '',
+        instance: newInstance,
+        sections: [],
+        isInitialized: false,
         isSummary: true,
-        sections:[],
+        completed: false,
+        maxTasks: 0,
+        tasksLeft: 0
       };
 
       columnNode.classList.add('h5p-interactive-book-chapter');
       columnNode.id = `h5p-interactive-book-chapter-summary`;
 
-      chapter.maxTasks = chapter.tasksLeft;
       chapters.push(chapter);
       this.columnNodes.push(columnNode);
     }
@@ -457,6 +554,7 @@ class PageContent extends H5P.EventDispatcher {
           oldChapter.classList.remove('h5p-interactive-book-animate');
 
           this.redirectSection(this.targetPage.section, this.targetPage.headerNumber);
+          this.focusLockedPlaceholder(chapterIdNew);
 
           this.parent.trigger('resize');
         }, 250);
@@ -465,10 +563,12 @@ class PageContent extends H5P.EventDispatcher {
         if (this.parent.cover && !this.parent.cover.hidden) {
           this.parent.on('coverRemoved', () => {
             this.redirectSection(this.targetPage.section, this.targetPage.headerNumber);
+            this.focusLockedPlaceholder(chapterIdNew);
           });
         }
         else {
           this.redirectSection(this.targetPage.section, this.targetPage.headerNumber);
+          this.focusLockedPlaceholder(chapterIdNew);
         }
       }
 

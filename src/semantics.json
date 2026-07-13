@@ -186,82 +186,6 @@
         "description": "When enabled the user can initiate a restart on the summary page.",
         "default": true,
         "optional": true
-      },
-      {
-        "name": "lockRules",
-        "type": "list",
-        "label": "Chapter lock rules",
-        "description": "Lock chapters based on the URL path of the page where the book is embedded.",
-        "importance": "low",
-        "optional": true,
-        "entity": "Rule",
-        "field": {
-          "name": "rule",
-          "type": "group",
-          "label": "Rule",
-          "importance": "low",
-          "fields": [
-            {
-              "name": "enabled",
-              "type": "boolean",
-              "label": "Enabled",
-              "default": true
-            },
-            {
-              "name": "matchType",
-              "type": "select",
-              "label": "Match type",
-              "default": "contains",
-              "options": [
-                {
-                  "value": "contains",
-                  "label": "Contains"
-                },
-                {
-                  "value": "startsWith",
-                  "label": "Starts with"
-                },
-                {
-                  "value": "regex",
-                  "label": "Regex"
-                }
-              ]
-            },
-            {
-              "name": "pathPattern",
-              "type": "text",
-              "label": "Path pattern",
-              "description": "Compares against pathname + query."
-            },
-            {
-              "name": "lockedChapters",
-              "type": "list",
-              "label": "Locked chapters",
-              "entity": "Chapter",
-              "field": {
-                "name": "lockedChapter",
-                "type": "group",
-                "label": "Chapter",
-                "fields": [
-                  {
-                    "name": "chapterNumber",
-                    "type": "number",
-                    "label": "Chapter number (1-based)",
-                    "min": 1,
-                    "step": 1
-                  }
-                ]
-              }
-            },
-            {
-              "name": "lockedText",
-              "type": "text",
-              "label": "Locked text",
-              "default": "Chapter locked",
-              "optional": true
-            }
-          ]
-        }
       }
     ]
   },
@@ -536,6 +460,52 @@
     "importance": "low",
     "label": "Total score label",
     "default": "Total score",
+    "common": true,
+    "optional": true
+  },
+  {
+    "name": "lockedChapter",
+    "type": "text",
+    "importance": "low",
+    "label": "Translation for \"Chapter locked\"",
+    "default": "Chapter locked",
+    "common": true,
+    "optional": true
+  },
+  {
+    "name": "loadingAccessPolicy",
+    "type": "text",
+    "importance": "low",
+    "label": "Translation for \"Loading access policy\"",
+    "default": "Loading access policy…",
+    "common": true,
+    "optional": true
+  },
+  {
+    "name": "chapterUnavailable",
+    "type": "text",
+    "importance": "low",
+    "label": "Translation for \"This chapter is unavailable\"",
+    "default": "This chapter is unavailable.",
+    "common": true,
+    "optional": true
+  },
+  {
+    "name": "lockedChapterA11y",
+    "type": "text",
+    "importance": "low",
+    "label": "Accessible description for a locked chapter",
+    "description": "@title is replaced with the chapter title and @message with the access message.",
+    "default": "Locked chapter: @title. @message",
+    "common": true,
+    "optional": true
+  },
+  {
+    "name": "noAvailableChapters",
+    "type": "text",
+    "importance": "low",
+    "label": "Translation for \"No chapters are currently available\"",
+    "default": "No chapters are currently available.",
     "common": true,
     "optional": true
   },

@@ -69,15 +69,13 @@ class StatusBar extends H5P.EventDispatcher {
         eventInput.section = 'top';
       }
 
-      if (event.data.direction === 'next') {
-        if (this.parent.activeChapter + 1 < this.parent.chapters.length) {
-          eventInput.chapter = `h5p-interactive-book-chapter-${this.parent.chapters[this.parent.activeChapter + 1].instance.subContentId}`;
-        }
-      }
-      else if (event.data.direction === 'prev') {
-        if (this.parent.activeChapter > 0) {
-          eventInput.chapter = `h5p-interactive-book-chapter-${this.parent.chapters[this.parent.activeChapter - 1].instance.subContentId}`;
-        }
+      const direction = event.data.direction === 'prev' ? 'prev' : 'next';
+      const targetIndex = this.parent.getNextAvailableChapterIndex(
+        this.parent.activeChapter, direction
+      );
+      const targetChapter = targetIndex === null ? null : this.parent.chapters[targetIndex];
+      if (targetChapter) {
+        eventInput.chapter = `h5p-interactive-book-chapter-${targetChapter.id}`;
       }
       if (eventInput.chapter) {
         this.parent.trigger('newChapter', eventInput);
@@ -107,7 +105,7 @@ class StatusBar extends H5P.EventDispatcher {
    */
   updateA11yProgress(chapterId, total = this.totalChapters) {
     const safeTotal = total || 1;
-    this.progressIndicator.hiddenButRead.innerHTML = this.params.a11y.progress
+    this.progressIndicator.hiddenButRead.textContent = this.params.a11y.progress
       .replace('@page', chapterId)
       .replace('@total', safeTotal);
   }
@@ -116,32 +114,45 @@ class StatusBar extends H5P.EventDispatcher {
    * Update status bar.
    */
   updateStatusBar() {
-    const currentChapter = this.parent.getActiveChapter() + 1;
-    const chapterTitle = this.parent.chapters[currentChapter - 1].title;
+    const activeChapterIndex = this.parent.getActiveChapter();
+    const activeChapter = this.parent.chapters[activeChapterIndex];
+    if (!activeChapter) {
+      return;
+    }
 
-    this.progressIndicator.current.innerHTML = currentChapter;
-    this.progressIndicator.total.innerHTML = this.totalChapters;
+    const totalAvailable = this.parent.getTotalVisibleChapters();
+    const isLocked = activeChapter.locked === true;
+    const currentPosition = activeChapter.isSummary ? totalAvailable :
+      this.parent.getAvailableChapterPosition(activeChapterIndex);
 
-    this.updateA11yProgress(currentChapter, this.totalChapters);
-    this.updateProgressBar(currentChapter, this.totalChapters);
+    this.wrapper.classList.toggle('h5p-interactive-book-status-locked', isLocked);
+    this.progressIndicator.total.textContent = totalAvailable;
+    this.chapterTitle.text.textContent = isLocked ?
+      `${activeChapter.title} — ${this.params.l10n.lockedChapter}` : activeChapter.title;
+    this.chapterTitle.text.setAttribute('title', this.chapterTitle.text.textContent);
 
-    this.chapterTitle.text.innerHTML = chapterTitle;
-
-    this.chapterTitle.text.setAttribute('title', chapterTitle);
+    if (isLocked) {
+      this.progressIndicator.current.textContent = '—';
+      this.progressIndicator.hiddenButRead.textContent = this.params.l10n.lockedChapterA11y
+        .replace('@title', () => activeChapter.title)
+        .replace('@message', () => activeChapter.lockedMessage || this.params.l10n.chapterUnavailable);
+      this.updateProgressBar(0, totalAvailable);
+    }
+    else {
+      this.progressIndicator.current.textContent = currentPosition;
+      this.updateA11yProgress(currentPosition, totalAvailable);
+      this.updateProgressBar(currentPosition, totalAvailable);
+    }
 
     //assure that the buttons are valid in terms of chapter edges
-    if (this.parent.activeChapter <= 0) {
-      this.setButtonStatus('Previous', true);
-    }
-    else {
-      this.setButtonStatus('Previous', false);
-    }
-    if ((this.parent.activeChapter + 1) >= this.totalChapters) {
-      this.setButtonStatus('Next', true);
-    }
-    else {
-      this.setButtonStatus('Next', false);
-    }
+    const previousIndex = this.parent.getNextAvailableChapterIndex(
+      this.parent.activeChapter, 'prev'
+    );
+    const nextIndex = this.parent.getNextAvailableChapterIndex(
+      this.parent.activeChapter, 'next'
+    );
+    this.setButtonStatus('Previous', previousIndex === null);
+    this.setButtonStatus('Next', nextIndex === null);
   }
 
   /**
@@ -310,7 +321,7 @@ class StatusBar extends H5P.EventDispatcher {
 
     const total = document.createElement('span');
     total.classList.add('h5p-interactive-book-status-progress-number');
-    total.innerHTML = this.parent.getTotalVisibleChapters() || this.totalChapters;
+    total.textContent = this.parent.getTotalVisibleChapters();
     total.setAttribute('aria-hidden', 'true');
 
     const hiddenButRead = document.createElement('p');

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/h5pchapteraccess/db" VERSION="20260713" COMMENT="XMLDB file for local_h5pchapteraccess"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="../../../lib/xmldb/xmldb.xsd"
+>
+  <TABLES>
+    <TABLE NAME="local_h5pca_book" COMMENT="Access policy configuration for an H5P activity">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="cmid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Course module ID for the H5P activity"/>
+        <FIELD NAME="contentid" TYPE="int" LENGTH="10" NOTNULL="false" SEQUENCE="false" COMMENT="Cached H5P content ID when available"/>
+        <FIELD NAME="contenthash" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Cached hash identifying the H5P content"/>
+        <FIELD NAME="manifesthash" TYPE="char" LENGTH="64" NOTNULL="false" SEQUENCE="false" COMMENT="Hash of the most recently processed chapter manifest"/>
+        <FIELD NAME="enabled" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether chapter access rules are enabled"/>
+        <FIELD NAME="defaultmessage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Default plain-text message for locked chapters"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="cmid-unique" TYPE="unique" FIELDS="cmid"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="contentid" UNIQUE="false" FIELDS="contentid"/>
+      </INDEXES>
+    </TABLE>
+    <TABLE NAME="local_h5pca_chapter" COMMENT="Access policy configuration for a chapter in an H5P activity">
+      <FIELDS>
+        <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+        <FIELD NAME="bookid" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="false" COMMENT="Parent record in local_h5pca_book"/>
+        <FIELD NAME="chapteruuid" TYPE="char" LENGTH="128" NOTNULL="true" SEQUENCE="false" COMMENT="Stable subContentId or controlled legacy fallback ID"/>
+        <FIELD NAME="titlecache" TYPE="char" LENGTH="255" NOTNULL="false" SEQUENCE="false" COMMENT="Last title received in the chapter manifest"/>
+        <FIELD NAME="positioncache" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Last position received in the chapter manifest"/>
+        <FIELD NAME="stableid" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether chapteruuid is a stable subContentId"/>
+        <FIELD NAME="accessmode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="open" SEQUENCE="false" COMMENT="Access mode: open, locked or conditional"/>
+        <FIELD NAME="availabilityjson" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Future conditional availability definition in JSON"/>
+        <FIELD NAME="lockedmessage" TYPE="text" NOTNULL="false" SEQUENCE="false" COMMENT="Plain-text message shown while this chapter is locked"/>
+        <FIELD NAME="showrestriction" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether the restriction explanation may be shown"/>
+        <FIELD NAME="active" TYPE="int" LENGTH="1" NOTNULL="true" DEFAULT="1" SEQUENCE="false" COMMENT="Whether the chapter is present in the active manifest"/>
+        <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+        <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" SEQUENCE="false"/>
+      </FIELDS>
+      <KEYS>
+        <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+        <KEY NAME="bookid" TYPE="foreign" FIELDS="bookid" REFTABLE="local_h5pca_book" REFFIELDS="id"/>
+        <KEY NAME="bookid-chapteruuid" TYPE="unique" FIELDS="bookid, chapteruuid"/>
+      </KEYS>
+      <INDEXES>
+        <INDEX NAME="bookid-active" UNIQUE="false" FIELDS="bookid, active"/>
+      </INDEXES>
+    </TABLE>
+  </TABLES>
+</XMLDB>

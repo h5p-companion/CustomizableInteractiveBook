@@ -188,6 +188,27 @@
       "default": "Total score"
     },
     {
+      "label": "Translation for \"Chapter locked\"",
+      "default": "Chapter locked"
+    },
+    {
+      "label": "Translation for \"Loading access policy\"",
+      "default": "Loading access policy…"
+    },
+    {
+      "label": "Translation for \"This chapter is unavailable\"",
+      "default": "This chapter is unavailable."
+    },
+    {
+      "label": "Accessible description for a locked chapter",
+      "description": "@title is replaced with the chapter title and @message with the access message.",
+      "default": "Locked chapter: @title. @message"
+    },
+    {
+      "label": "Translation for \"No chapters are currently available\"",
+      "default": "No chapters are currently available."
+    },
+    {
       "label": "Accessibility texts",
       "fields": [
         {

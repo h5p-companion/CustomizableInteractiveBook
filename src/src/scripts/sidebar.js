@@ -238,28 +238,16 @@ class SideBar extends H5P.EventDispatcher {
    * @return {object[]} Chapters data.
    */
   findAllChapters(columnsData) {
-    const chapters = [];
-    for (let i = 0; i < columnsData.length; i++) {
-      const sections = this.findSectionsInChapter(columnsData[i]);
-      const chapterTitle = columnsData[i].metadata.title;
-      const id = `h5p-interactive-book-chapter-${columnsData[i].subContentId}`;
-      chapters.push({
-        sections: sections,
-        title: chapterTitle,
-        id: id,
-        isSummary: false,
-      });
-    }
-
-    if ( this.parent.hasSummary()) {
-      chapters.push({
-        sections: [],
-        title: this.l10n.summaryHeader,
-        id: `h5p-interactive-book-chapter-summary`,
-        isSummary: true,
-      });
-    }
-    return chapters;
+    return this.parent.chapters.map(chapter => ({
+      sections: chapter.isSummary || chapter.locked ? [] :
+        this.findSectionsInChapter(columnsData[chapter.position]),
+      title: chapter.title,
+      id: `h5p-interactive-book-chapter-${chapter.id}`,
+      isSummary: chapter.isSummary,
+      locked: chapter.locked,
+      lockedMessage: chapter.lockedMessage,
+      tasksLeft: chapter.tasksLeft
+    }));
   }
 
   /**
@@ -326,6 +314,10 @@ class SideBar extends H5P.EventDispatcher {
    */
   resetIndicators() {
     this.chapterNodes.forEach((node, index) => {
+      if (this.chapters[index]?.locked) {
+        return;
+      }
+
       // Reset chapter
       this.updateChapterProgressIndicator(index, 'BLANK');
 
@@ -353,12 +345,15 @@ class SideBar extends H5P.EventDispatcher {
     }
 
     const chapter = this.chapters[chapterId];
-    if ( chapter.isSummary ) {
+    if (!chapter || chapter.isSummary || chapter.locked) {
       return;
     }
 
     const progressIndicator = this.chapterNodes[chapterId]
       .getElementsByClassName('h5p-interactive-book-navigation-chapter-progress')[0];
+    if (!progressIndicator) {
+      return;
+    }
 
     if (status === 'BLANK') {
       progressIndicator.classList.remove('icon-chapter-started');
@@ -408,13 +403,16 @@ class SideBar extends H5P.EventDispatcher {
     if ( chapter.isSummary) {
       chapterNode.classList.add('h5p-interactive-book-navigation-summary-button');
       const summary = this.parent.chapters[chapterId];
-      const summaryButton = summary.instance.summaryMenuButton;
+      const summaryButton = summary.instance?.summaryMenuButton;
+      if (!summaryButton) {
+        return chapterNode;
+      }
       summaryButton.classList.add('h5p-interactive-book-navigation-chapter-button');
       chapterNode.appendChild(summaryButton);
       return chapterNode;
     }
 
-    const isLocked = this.parent.isChapterLocked(chapterId);
+    const isLocked = chapter.locked === true;
     if (isLocked) {
       chapterNode.classList.add('h5p-interactive-book-navigation-chapter-locked');
     }
@@ -425,18 +423,35 @@ class SideBar extends H5P.EventDispatcher {
 
     const chapterTitleText = document.createElement('div');
     chapterTitleText.classList.add('h5p-interactive-book-navigation-chapter-title-text');
-    chapterTitleText.innerHTML = chapter.title;
+    chapterTitleText.textContent = chapter.title;
     chapterTitleText.setAttribute('title', chapter.title);
 
     const chapterCompletionIcon = document.createElement('div');
-    if (this.behaviour.progressIndicators) {
+    if (isLocked) {
+      chapterCompletionIcon.classList.add('h5p-interactive-book-navigation-chapter-lock');
+      chapterCompletionIcon.setAttribute('aria-hidden', 'true');
+      chapterCompletionIcon.textContent = '🔒';
+    }
+    else if (this.behaviour.progressIndicators) {
       chapterCompletionIcon.classList.add('icon-chapter-blank');
       chapterCompletionIcon.classList.add('h5p-interactive-book-navigation-chapter-progress');
     }
 
     const chapterNodeTitle = document.createElement('button');
-    chapterNodeTitle.setAttribute('tabindex', chapterId === 0 ? '0' : '-1');
+    chapterNodeTitle.setAttribute('tabindex', isLocked || chapterId === 0 ? '0' : '-1');
     chapterNodeTitle.classList.add('h5p-interactive-book-navigation-chapter-button');
+    if (isLocked) {
+      const descriptionId = `h5p-interactive-book-locked-description-${chapterId}`;
+      const accessibleDescription = document.createElement('span');
+      accessibleDescription.id = descriptionId;
+      accessibleDescription.className = 'h5p-interactive-book-accessible-description';
+      accessibleDescription.textContent = this.l10n.lockedChapterA11y
+        .replace('@title', () => chapter.title)
+        .replace('@message', () => chapter.lockedMessage || this.l10n.chapterUnavailable);
+      chapterNodeTitle.setAttribute('aria-disabled', 'true');
+      chapterNodeTitle.setAttribute('aria-describedby', descriptionId);
+      chapterNodeTitle.appendChild(accessibleDescription);
+    }
     if (this.parent.activeChapter !== chapterId) {
       chapterCollapseIcon.classList.add('icon-collapsed');
       chapterNodeTitle.setAttribute('aria-expanded', 'false');

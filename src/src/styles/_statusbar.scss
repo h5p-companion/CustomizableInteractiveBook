@@ -151,6 +151,13 @@
   text-decoration: none solid var(--color-base, $base-color);
 }
 
+.h5p-interactive-book-status-locked {
+  .h5p-interactive-book-status-progress-number,
+  .h5p-interactive-book-status-chapter .title {
+    color: $mud-80;
+  }
+}
+
 .h5p-interactive-book-status-progress-divider {
   color: $mud;
   font-family: Arial;
