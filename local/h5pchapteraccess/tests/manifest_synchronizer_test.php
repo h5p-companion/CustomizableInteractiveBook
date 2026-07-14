@@ -46,7 +46,13 @@ final class manifest_synchronizer_test extends \advanced_testcase {
             new chapter('uuid-b', 'Second', 1, true),
         ]);
         $this->assertSame(
-            ['created' => 2, 'updated' => 0, 'reactivated' => 0, 'deactivated' => 0],
+            [
+                'created' => 2,
+                'updated' => 0,
+                'reactivated' => 0,
+                'deactivated' => 0,
+                'unstableids' => [],
+            ],
             $synchronizer->synchronize($first)
         );
 
@@ -154,6 +160,57 @@ final class manifest_synchronizer_test extends \advanced_testcase {
         $this->assertSame('locked', $reactivated->accessmode);
         $this->assertSame('Still locked', $reactivated->lockedmessage);
         $this->assertSame('Second restored', $reactivated->titlecache);
+    }
+
+    /**
+     * Synchronization reports unstable runtime identifiers without matching by title.
+     */
+    public function test_unstable_identifiers_are_reported(): void {
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $cmid = $this->create_h5p_activity_cmid();
+
+        $summary = (new manifest_synchronizer())->synchronize($this->manifest($cmid, [
+            new chapter('legacy-position-0', 'Legacy title', 0, false),
+        ]));
+
+        $this->assertSame(['legacy-position-0'], $summary['unstableids']);
+    }
+
+    /**
+     * A new UUID with the same title never inherits a legacy position rule.
+     */
+    public function test_rule_is_not_migrated_by_title(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $cmid = $this->create_h5p_activity_cmid();
+        $synchronizer = new manifest_synchronizer();
+        $synchronizer->synchronize($this->manifest($cmid, [
+            new chapter('legacy-position-0', 'Same title', 0, false),
+        ]));
+        $bookid = $DB->get_field('local_h5pca_book', 'id', ['cmid' => $cmid], MUST_EXIST);
+        $legacy = $DB->get_record('local_h5pca_chapter', [
+            'bookid' => $bookid,
+            'chapteruuid' => 'legacy-position-0',
+        ], '*', MUST_EXIST);
+        $legacy->accessmode = 'locked';
+        $legacy->lockedmessage = 'Do not migrate';
+        $DB->update_record('local_h5pca_chapter', $legacy);
+
+        $summary = $synchronizer->synchronize($this->manifest($cmid, [
+            new chapter('uuid-new', 'Same title', 0, true),
+        ], 102, 'hash-2'));
+
+        $newchapter = $DB->get_record('local_h5pca_chapter', [
+            'bookid' => $bookid,
+            'chapteruuid' => 'uuid-new',
+        ], '*', MUST_EXIST);
+        $this->assertSame(1, $summary['created']);
+        $this->assertSame(1, $summary['deactivated']);
+        $this->assertSame('open', $newchapter->accessmode);
+        $this->assertNull($newchapter->lockedmessage);
+        $this->assertSame(0, (int) $DB->get_field('local_h5pca_chapter', 'active', ['id' => $legacy->id]));
     }
 
     /**

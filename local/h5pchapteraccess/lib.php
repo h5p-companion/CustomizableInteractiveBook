@@ -17,7 +17,7 @@
 /**
  * Library callbacks for local_h5pchapteraccess.
  *
- * Runtime logic belongs in autoloaded classes. No callbacks are required yet.
+ * Runtime logic belongs in autoloaded classes.
  *
  * @package    local_h5pchapteraccess
  * @copyright  2026 Luiz Gustavo
@@ -25,3 +25,16 @@
  */
 
 defined('MOODLE_INTERNAL') || die();
+
+/**
+ * Add the chapter access page to compatible activity settings navigation.
+ *
+ * @param settings_navigation $settingsnav Settings navigation
+ * @param context $context Current page context
+ */
+function local_h5pchapteraccess_extend_settings_navigation(
+    settings_navigation $settingsnav,
+    context $context
+): void {
+    \local_h5pchapteraccess\service\navigation_service::extend_settings_navigation($settingsnav, $context);
+}

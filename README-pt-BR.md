@@ -1,87 +1,196 @@
-# H5P Interactive Book (PT-BR)
+# H5P.CustomizableInteractiveBook
 
-Interactive Book e uma biblioteca H5P que organiza diferentes tipos de conteudo em paginas e secoes dentro de um livro interativo. Ela suporta conteudo aninhado, configuracao individual por item e reordenacao via arrastar e soltar no editor.
+`H5P.CustomizableInteractiveBook` é uma variante do Livro Interativo com uma camada de acesso a capítulos controlada pela plataforma hospedeira. A plataforma decide quais capítulos estão disponíveis; a biblioteca H5P recebe uma política versionada e a aplica à interface, navegação, estado, pontuação, progresso, conclusão, resumo e xAPI.
 
-## Status do projeto
-Beta
+A biblioteca é independente da plataforma. Ela não conhece cursos, grupos, notas, conclusões, banco de dados, URLs internas ou classes PHP do Moodle. A implementação hospedeira correspondente é o plugin `local_h5pchapteraccess`.
 
-## Badges
-Em alguns READMEs voce pode ver pequenos selos que indicam metadados do projeto, como status de testes. Use o Shields para gerar badges quando fizer sentido.
+## Estrutura do repositório
 
-## Visuais
-![Example](./img/exampleCIB.png)
+- `src/`: código e metadados compiláveis da biblioteca H5P;
+- `src/src/scripts/access/`: manifesto, política, controlador, ponte e helpers de runtime;
+- `src/src/scripts/`: aplicação e componentes visuais do Livro Interativo;
+- `src/src/styles/`: fontes SCSS;
+- `src/tests/`: testes Node;
+- `local/h5pchapteraccess/`: plugin Moodle 4.5;
+- `docs/architecture.md`: arquitetura completa e fronteiras de confiança;
+- `docs/test-plan.md`: matriz de testes automatizados e manuais.
 
-## Instalacao
-Dentro do ecossistema H5P, instale as dependencias do projeto e use o conteudo no seu ambiente H5P. Se voce precisa de versoes especificas de Node ou outras dependencias, inclua um bloco de requisitos na sua documentacao interna.
+## Manifesto de capítulos
 
-## Build
-```bash
-npm install
-npm run build
+O manifesto é criado a partir de `config.chapters` antes da construção das instâncias filhas. Ele é imutável e contém apenas:
+
+```json
+[
+  {
+    "id": "15f0a80e-4ba1-4b51-9c4a-113e986474a8",
+    "title": "Introdução",
+    "position": 0,
+    "stable": true
+  }
+]
 ```
 
-## Uso
-Crie um novo conteudo do tipo Interactive Book no editor H5P, adicione as paginas desejadas e organize as secoes. Cada pagina pode conter conteudo H5P diverso, e o livro cuida da navegacao e do progresso.
+`id` é o `subContentId`, nunca a posição numérica. Um conteúdo legado sem `subContentId` recebe somente em runtime um ID `legacy-position-N` e `stable: false`. IDs duplicados interrompem a inicialização para impedir associação ambígua. O título é apenas metadado de apresentação.
 
-## Arquitetura da política de acesso
+## AccessPolicy
 
-O acesso segue uma cadeia clara de responsabilidade: **Moodle → política de acesso → H5P**. O plugin Moodle avalia cursos, grupos, notas e atividades. O Livro Interativo não conhece esses conceitos; ele apenas aplica uma política indexada pelo `subContentId` permanente de cada capítulo.
+`AccessPolicy` normaliza a resposta externa em um mapa imutável. A política possui `contractVersion`, `required`, `teacherBypass` e, para cada ID, `available` e `message`. Valores opcionais inválidos são normalizados com segurança. Capítulos omitidos permanecem disponíveis. `AccessPolicy.allowAll(manifest)` implementa o fallback autônomo.
 
-Antes de criar os runtimes dos capítulos, o livro envia seu manifesto para a janela `parent` imediata:
+## AccessController
+
+`AccessController` é a API de domínio consumida pela interface. Ele informa disponibilidade, mensagem, IDs e quantidade disponíveis, posição visível e próximo/anterior disponível. Os componentes visuais não interpretam diretamente a resposta da plataforma.
+
+## HostBridge
+
+`HostBridge` é o único componente H5P que conversa com a janela `parent`. Ele:
+
+- cria `requestId` com `crypto.randomUUID()`, `crypto.getRandomValues()` ou fallback de runtime;
+- deriva a origem exata do `parent` a partir de `document.referrer`;
+- envia `ready` apenas para essa origem;
+- repete o envio por uma janela curta;
+- valida `event.source`, origem, tipo, versão, `requestId` e `contentId`;
+- remove listeners e timers no sucesso, timeout ou `dispose()`;
+- usa `allowAll` após aproximadamente 2,5 segundos sem resposta válida.
+
+Não existe `targetOrigin: "*"`.
+
+## Contrato postMessage versão 1
+
+Mensagem enviada pelo H5P:
 
 ```json
 {
   "type": "h5p-customizable-interactive-book:ready",
   "contractVersion": 1,
-  "requestId": "...",
-  "contentId": "...",
+  "requestId": "7de9f73b-eef1-4d6a-a582-d291c9834894",
+  "contentId": "123",
   "library": "H5P.CustomizableInteractiveBook",
-  "chapters": [{ "id": "...", "title": "...", "position": 0, "stable": true }]
+  "chapters": [
+    {
+      "id": "15f0a80e-4ba1-4b51-9c4a-113e986474a8",
+      "title": "Introdução",
+      "position": 0,
+      "stable": true
+    }
+  ]
 }
 ```
 
-A plataforma pode responder com `h5p-customizable-interactive-book:policy`, usando a mesma versão do contrato, `requestId` e `contentId`, além de um mapa de capítulos com `available` e uma mensagem opcional em texto simples. A origem e a janela remetente são validadas contra o `parent` imediato. A mensagem de prontidão é reenviada durante uma janela curta.
+Resposta da plataforma para a origem e janela verificadas:
 
 ```json
 {
   "type": "h5p-customizable-interactive-book:policy",
   "contractVersion": 1,
-  "requestId": "...",
-  "contentId": "...",
+  "requestId": "7de9f73b-eef1-4d6a-a582-d291c9834894",
+  "contentId": "123",
   "required": true,
   "teacherBypass": false,
   "chapters": {
-    "uuid-do-capitulo": { "available": false, "message": "Conclua o pré-requisito." }
+    "15f0a80e-4ba1-4b51-9c4a-113e986474a8": {
+      "available": false,
+      "message": "Conclua a atividade pré-requisito."
+    }
   }
 }
 ```
 
-Se o livro não estiver embutido, a origem do `parent` não puder ser determinada ou nenhuma política válida chegar em aproximadamente 2,5 segundos, é aplicada uma política allow-all. Assim, o conteúdo continua funcionando fora do Moodle.
+Os campos diferenciam maiúsculas de minúsculas. A resposta deve repetir exatamente o `requestId` e o `contentId` textual. Mensagens são texto simples. Regras Moodle e registros internos não fazem parte do contrato.
 
-O bloqueio é pedagógico e de navegação, não um mecanismo de criptografia do conteúdo. O pacote H5P continua contendo os parâmetros de todos os capítulos. Entretanto, a biblioteca H5P filha de um capítulo bloqueado não é inicializada; esse capítulo não participa de pontuação, progresso, alterações de estado, conclusão, reset, soluções, resumo ou xAPI, e somente um placeholder acessível em texto simples é exibido.
+## Fluxo de inicialização
 
-## Suporte
-Por sua conta e risco.
+1. O construtor sanitiza a configuração e cria o manifesto.
+2. `HostBridge.requestPolicy()` inicia antes de `PageContent` ou qualquer runtime filho.
+3. `attach()` pode mostrar um status acessível de carregamento.
+4. A política válida ou o timeout cria o `AccessController`.
+5. `initializeRuntime()` executa exatamente uma vez e cria capa, páginas, menu lateral e barras de status.
+6. Capítulos disponíveis criam a instância filha com `H5P.newRunnable`.
+7. Capítulos bloqueados criam somente o placeholder acessível.
 
-## Roadmap
-Sem planos de evolucao no momento.
+Fora de iframe, sem origem verificável, sem o plugin Moodle ou após resposta inválida, todos os capítulos ficam disponíveis depois do timeout.
 
-## Contribuicao
-Faca um fork do projeto e envie um PR.
+## Comportamento de capítulos bloqueados
 
-## Autores e agradecimentos
-- Luiz Gustavo
-- KelsonCM @ github
+Um capítulo bloqueado continua focável e selecionável no menu para que a explicação possa ser lida. O placeholder usa estrutura acessível e insere a mensagem externa com `textContent`.
 
-## Licenca
-Texto original da licenca MIT:
+Para um capítulo bloqueado:
 
-(The MIT License)
+- `H5P.newRunnable` não é executado;
+- nenhuma biblioteca filha é inicializada e nenhum evento é propagado;
+- `instance` permanece `null` e `sections` permanece vazio;
+- próximo/anterior ignoram o capítulo;
+- menu, hash ou estado restaurado mostram somente o placeholder;
+- pontuação, máximo, resposta, progresso, conclusão, resumo, reset, soluções, estado e xAPI o ignoram.
 
-Copyright (c) 2012-2014 Joubel AS
+Se todos estiverem bloqueados, o primeiro placeholder é mostrado, o resumo não é criado, as pontuações são zero e o livro não é concluído automaticamente.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+## Estado por UUID
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+O estado atual usa primeiro `chaptersById`, indexado pelo `subContentId`:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```json
+{
+  "chaptersById": {
+    "15f0a80e-4ba1-4b51-9c4a-113e986474a8": {
+      "completed": false,
+      "tasksLeft": 1,
+      "sections": [],
+      "state": {}
+    }
+  },
+  "chapters": [],
+  "score": 0,
+  "maxScore": 0,
+  "urlFragments": {}
+}
+```
+
+O array legado `chapters` é somente fallback de compatibilidade. Um capítulo com UUID nunca recebe estado de outra posição após reorganização. O estado já salvo para um UUID atualmente bloqueado é preservado para restauração em um desbloqueio futuro.
+
+## Pontuação, progresso, conclusão, resumo e xAPI
+
+Somente capítulos disponíveis, não-resumo e com instância válida participam de pontuação, máximo, resposta, estado, soluções, reset, xAPI e conclusão. Conclusão significa que todos os capítulos disponíveis, exceto o resumo, foram concluídos. A barra de progresso conta apenas capítulos disponíveis e mostra texto de bloqueio quando um placeholder é aberto intencionalmente.
+
+O resumo só é criado quando habilitado e existe ao menos um capítulo disponível. Ele não recebe tarefas bloqueadas. Eventos xAPI por capítulo e a submissão final ignoram capítulos bloqueados ou sem instância.
+
+## Build
+
+Requer Node.js compatível e npm:
+
+```bash
+cd src
+npm ci
+npm run build
+```
+
+Os artefatos são gerados em `src/dist/`. Não edite arquivos gerados manualmente. `node_modules/` é somente uma dependência de desenvolvimento e não deve integrar o pacote H5P distribuído.
+
+Modo de desenvolvimento:
+
+```bash
+npm run dev
+npm run watch
+```
+
+## Testes e lint
+
+```bash
+cd src
+npm test
+npm run lint
+npm run build
+```
+
+A suíte cobre manifesto e imutabilidade, UUID estável, fallback legado, duplicidade, normalização, navegação disponível, todos bloqueados, validação das mensagens, timeout, descarte, duplicidade de resposta, prevenção de runtime bloqueado, pontuação e estado por UUID. A matriz completa está em [docs/test-plan.md](docs/test-plan.md).
+
+## Limites de segurança
+
+O Moodle não confia no manifesto enviado pelo navegador: o pacote implantado é extraído novamente no servidor e somente a decisão final por capítulo é enviada. O H5P valida o `parent` imediato, mas não autentica o significado pedagógico da política além da origem e dos campos de correlação. O fallback sem resposta é propositalmente `allowAll` para preservar o uso autônomo.
+
+**O bloqueio controla visualização, inicialização das bibliotecas filhas e navegação, mas o pacote H5P continua contendo os parâmetros originais dos capítulos. A solução não deve ser apresentada como mecanismo de proteção para informações confidenciais.**
+
+Conteúdo confidencial exige autorização no servidor e recursos protegidos separados.
+
+## Licença
+
+MIT. Consulte [LICENSE](src/LICENSE).

@@ -53,7 +53,7 @@ class URLTools {
    */
   static areFragmentsEqual(fragment1, fragment2, limitTo = []) {
     for (const key in fragment1) {
-      if (fragment1.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(fragment1, key)) {
         if (limitTo.length > 0 && limitTo.indexOf(key) === -1) {
           continue;
         }

@@ -36,5 +36,41 @@ function xmldb_local_h5pchapteraccess_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026071301, 'local', 'h5pchapteraccess');
     }
 
+    if ($oldversion < 2026071400) {
+        // This release adds a manual configuration interface only; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071400, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071401) {
+        // This release registers an AJAX service and output hook; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071401, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071402) {
+        // This release evaluates stored chapter conditions; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071402, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071403) {
+        // This release adds a standard Availability API editor; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071403, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071404) {
+        // This release adds cache definitions, lifecycle observers and standard
+        // activity backup/restore support; no database schema change is required.
+        upgrade_plugin_savepoint(true, 2026071404, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071405) {
+        // Production review: query reuse and expanded tests; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071405, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071406) {
+        // Stable documentation release; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071406, 'local', 'h5pchapteraccess');
+    }
+
     return true;
 }

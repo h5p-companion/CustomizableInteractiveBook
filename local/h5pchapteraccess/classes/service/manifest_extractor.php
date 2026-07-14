@@ -45,13 +45,18 @@ final class manifest_extractor {
     /** @var factory core_h5p factory. */
     private factory $factory;
 
+    /** @var manifest_cache Structural manifest cache. */
+    private manifest_cache $cache;
+
     /**
      * Constructor.
      *
      * @param factory|null $factory core_h5p factory, primarily for tests
+     * @param manifest_cache|null $cache Structural manifest cache
      */
-    public function __construct(?factory $factory = null) {
+    public function __construct(?factory $factory = null, ?manifest_cache $cache = null) {
         $this->factory = $factory ?? new factory();
+        $this->cache = $cache ?? new manifest_cache();
     }
 
     /**
@@ -63,6 +68,30 @@ final class manifest_extractor {
      * @throws unsupported_content_exception
      */
     public function extract(int $cmid): manifest {
+        return $this->extract_manifest($cmid, true);
+    }
+
+    /**
+     * Extract a manifest during a trusted Moodle restore operation.
+     *
+     * This bypasses only the interactive login/capability checks. Module type,
+     * H5P instance, package and library validation remain identical.
+     *
+     * @param int $cmid Newly restored course module ID
+     * @return manifest
+     */
+    public function extract_after_restore(int $cmid): manifest {
+        return $this->extract_manifest($cmid, false);
+    }
+
+    /**
+     * Shared extraction implementation.
+     *
+     * @param int $cmid Course module ID
+     * @param bool $authorize Whether to perform interactive access checks
+     * @return manifest
+     */
+    private function extract_manifest(int $cmid, bool $authorize): manifest {
         if ($cmid <= 0) {
             throw new invalid_activity_exception(invalid_activity_exception::CM_NOT_FOUND, $cmid);
         }
@@ -82,15 +111,17 @@ final class manifest_extractor {
         }
 
         $context = \context_module::instance($cm->id);
-        try {
-            require_login($course, true, $cm);
-            require_capability('mod/h5pactivity:view', $context);
-        } catch (\moodle_exception $exception) {
-            throw new invalid_activity_exception(
-                invalid_activity_exception::ACCESS_DENIED,
-                $cmid,
-                $exception->getMessage()
-            );
+        if ($authorize) {
+            try {
+                require_login($course, true, $cm);
+                require_capability('mod/h5pactivity:view', $context);
+            } catch (\moodle_exception $exception) {
+                throw new invalid_activity_exception(
+                    invalid_activity_exception::ACCESS_DENIED,
+                    $cmid,
+                    $exception->getMessage()
+                );
+            }
         }
 
         try {
@@ -146,6 +177,17 @@ final class manifest_extractor {
             );
         }
 
+        $contenthash = $originalfile->get_contenthash();
+        $cached = $this->cache->get(
+            $cmid,
+            (int) $h5p->id,
+            $contenthash,
+            $library->machinename
+        );
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $json = null;
         try {
             $content = $this->factory->get_core()->loadContent((int) $h5p->id);
@@ -161,13 +203,15 @@ final class manifest_extractor {
             $json = $this->extract_content_json_from_package($originalfile);
         }
 
-        return $this->create_manifest_from_json(
+        $manifest = $this->create_manifest_from_json(
             $cmid,
             (int) $h5p->id,
-            $originalfile->get_contenthash(),
+            $contenthash,
             $library->machinename,
             $json
         );
+        $this->cache->set($manifest);
+        return $manifest;
     }
 
     /**

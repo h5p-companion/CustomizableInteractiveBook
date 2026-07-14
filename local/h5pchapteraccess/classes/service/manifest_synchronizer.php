@@ -68,12 +68,40 @@ final class manifest_synchronizer {
         $context = \context_module::instance($manifest->get_cmid());
         require_capability('local/h5pchapteraccess:manage', $context);
 
+        return $this->synchronize_records($manifest);
+    }
+
+    /**
+     * Synchronize after a policy request has already validated activity access.
+     *
+     * This entry point is intentionally separate from the management operation. It
+     * must only be called after require_login and mod/h5pactivity:view checks.
+     *
+     * @param manifest $manifest Extracted server-side manifest
+     * @return array Counts keyed by created, updated, reactivated and deactivated
+     */
+    public function synchronize_for_policy(manifest $manifest): array {
+        $context = \context_module::instance($manifest->get_cmid());
+        require_capability('mod/h5pactivity:view', $context);
+
+        return $this->synchronize_records($manifest);
+    }
+
+    /**
+     * Synchronize records atomically after the caller has performed authorization.
+     *
+     * @param manifest $manifest Extracted manifest
+     * @return array Synchronization counts
+     */
+    private function synchronize_records(manifest $manifest): array {
+
         $transaction = $this->db->start_delegated_transaction();
         $summary = [
             'created' => 0,
             'updated' => 0,
             'reactivated' => 0,
             'deactivated' => 0,
+            'unstableids' => [],
         ];
 
         $book = $this->books->save_manifest($manifest);
@@ -83,6 +111,9 @@ final class manifest_synchronizer {
         foreach ($manifest->get_chapters() as $chapter) {
             $chapterid = $chapter->get_id();
             $presentids[$chapterid] = true;
+            if (!$chapter->is_stable()) {
+                $summary['unstableids'][] = $chapterid;
+            }
 
             if (!isset($existing[$chapterid])) {
                 $this->chapters->create((int) $book->id, $chapter);
@@ -108,5 +139,18 @@ final class manifest_synchronizer {
 
         $transaction->allow_commit();
         return $summary;
+    }
+
+    /**
+     * Synchronize during a trusted Moodle restore after IDs were remapped.
+     *
+     * The restore caller supplies a server-extracted manifest. This method is
+     * intentionally not used by browser entry points.
+     *
+     * @param manifest $manifest Restored activity manifest
+     * @return array Synchronization counts
+     */
+    public function synchronize_after_restore(manifest $manifest): array {
+        return $this->synchronize_records($manifest);
     }
 }

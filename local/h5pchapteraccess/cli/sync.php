@@ -103,5 +103,8 @@ cli_writeln('Created: ' . $summary['created']);
 cli_writeln('Updated: ' . $summary['updated']);
 cli_writeln('Reactivated: ' . $summary['reactivated']);
 cli_writeln('Deactivated: ' . $summary['deactivated']);
+if ($summary['unstableids']) {
+    cli_writeln('Warning: unstable chapter IDs: ' . implode(', ', $summary['unstableids']));
+}
 
 exit(0);

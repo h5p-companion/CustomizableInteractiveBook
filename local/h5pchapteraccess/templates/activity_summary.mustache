@@ -1,0 +1,29 @@
+{{!
+    @template local_h5pchapteraccess/activity_summary
+
+    Activity and extracted H5P manifest summary.
+}}
+<section class="card mb-4" aria-labelledby="local-h5pca-activity-summary-heading">
+    <div class="card-body">
+        <h2 class="h4" id="local-h5pca-activity-summary-heading">
+            {{#str}} activitysummary, local_h5pchapteraccess {{/str}}
+        </h2>
+        <dl class="row mb-0">
+            <dt class="col-sm-4">{{#str}} activityname, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8">{{activityname}}</dd>
+            <dt class="col-sm-4">{{#str}} coursemoduleid, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8">{{cmid}}</dd>
+            <dt class="col-sm-4">{{#str}} contentid, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8">{{contentid}}</dd>
+            <dt class="col-sm-4">{{#str}} contenthash, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8"><code>{{contenthash}}</code></dd>
+            <dt class="col-sm-4">{{#str}} manifesthash, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8"><code>{{manifesthash}}</code></dd>
+            <dt class="col-sm-4">{{#str}} activechaptercount, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8">{{activecount}}</dd>
+            <dt class="col-sm-4">{{#str}} integrationstatus, local_h5pchapteraccess {{/str}}</dt>
+            <dd class="col-sm-8">{{integrationstatus}}</dd>
+        </dl>
+    </div>
+</section>
+<div class="alert alert-info" role="note">{{studentviewnotice}}</div>

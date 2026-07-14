@@ -52,22 +52,22 @@ class Cover extends H5P.EventDispatcher {
    * @param {object} coverImage Image object.
    */
   createVisualsElement(params) {
-  if (!params || !params.params || !params.params.file) {
-    return null;
+    if (!params || !params.params || !params.params.file) {
+      return null;
+    }
+
+    const imagePath = H5P.getPath(params.params.file.path, this.contentId);
+
+    const visuals = document.createElement('div');
+    visuals.classList.add('h5p-interactive-book-cover-graphics-full');
+    visuals.style.backgroundImage = `url("${imagePath}")`;
+    visuals.style.backgroundSize = 'cover';
+    visuals.style.backgroundPosition = 'center';
+    visuals.style.width = '80%';
+    visuals.style.height = '80%';
+
+    return visuals;
   }
-
-  const imagePath = H5P.getPath(params.params.file.path, this.contentId);
-
-  const visuals = document.createElement('div');
-  visuals.classList.add('h5p-interactive-book-cover-graphics-full');
-  visuals.style.backgroundImage = `url("${imagePath}")`;
-  visuals.style.backgroundSize = 'cover';
-  visuals.style.backgroundPosition = 'center';
-  visuals.style.width = '80%';
-  visuals.style.height = '80%';
-
-  return visuals;
-}
 
   /**
    * Initialize Media.

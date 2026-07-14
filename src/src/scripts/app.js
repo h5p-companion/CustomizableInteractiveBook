@@ -8,6 +8,10 @@ import createChapterManifest from './access/chapter-manifest';
 import AccessPolicy from './access/access-policy';
 import AccessController from './access/access-controller';
 import HostBridge from './access/host-bridge';
+import {
+  getAvailableRuntimeChapters,
+  sumAvailableChapterMetric
+} from './access/chapter-runtime';
 
 export default class InteractiveBook extends H5P.EventDispatcher {
   /**
@@ -107,8 +111,7 @@ export default class InteractiveBook extends H5P.EventDispatcher {
      *
      * @return {object[]} Available, non-summary chapters with valid instances.
      */
-    this.getAvailableRuntimeChapters = () => this.chapters.filter(chapter =>
-      !chapter.isSummary && chapter.available === true && !chapter.locked && chapter.instance);
+    this.getAvailableRuntimeChapters = () => getAvailableRuntimeChapters(this.chapters);
 
     /**
      * Check if result has been submitted or input has been given.
@@ -145,9 +148,7 @@ export default class InteractiveBook extends H5P.EventDispatcher {
         return 0;
       }
 
-      return this.getAvailableRuntimeChapters().reduce((accu, current) =>
-        typeof current.instance.getScore === 'function' ?
-          accu + current.instance.getScore() : accu, 0);
+      return sumAvailableChapterMetric(this.chapters, 'getScore');
     };
 
     /**
@@ -161,9 +162,7 @@ export default class InteractiveBook extends H5P.EventDispatcher {
         return 0;
       }
 
-      return this.getAvailableRuntimeChapters().reduce((accu, current) =>
-        typeof current.instance.getMaxScore === 'function' ?
-          accu + current.instance.getMaxScore() : accu, 0);
+      return sumAvailableChapterMetric(this.chapters, 'getMaxScore');
     };
 
     /**

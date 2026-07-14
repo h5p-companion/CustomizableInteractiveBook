@@ -1,5 +1,9 @@
 import URLTools from './urltools';
 import Summary from "./summary";
+import {
+  createAvailableChapterInstance,
+  getPreviousChapterState
+} from './access/chapter-runtime';
 
 class PageContent extends H5P.EventDispatcher {
   /**
@@ -155,28 +159,7 @@ class PageContent extends H5P.EventDispatcher {
    * @return {object|null} Persisted chapter state.
    */
   getPreviousChapterState(chapter) {
-    if (!this.previousState || !chapter) {
-      return null;
-    }
-
-    const chaptersById = this.previousState.chaptersById;
-    if (chaptersById && typeof chaptersById === 'object' && !Array.isArray(chaptersById)) {
-      return Object.prototype.hasOwnProperty.call(chaptersById, chapter.id) ?
-        chaptersById[chapter.id] : null;
-    }
-
-    const legacyState = Array.isArray(this.previousState.chapters) ?
-      this.previousState.chapters[chapter.position] : null;
-    if (!legacyState || typeof legacyState !== 'object') {
-      return null;
-    }
-
-    const persistedId = legacyState.id || legacyState.subContentId;
-    if (persistedId && persistedId !== chapter.id) {
-      return null;
-    }
-
-    return legacyState;
+    return getPreviousChapterState(this.previousState, chapter);
   }
 
   /**
@@ -334,9 +317,14 @@ class PageContent extends H5P.EventDispatcher {
           previousState: chapterState?.state && typeof chapterState.state === 'object' ?
             chapterState.state : {}
         };
-        const newInstance = H5P.newRunnable(
+        const newInstance = createAvailableChapterInstance(chapter, () => H5P.newRunnable(
           config.chapters[i], contentId, undefined, undefined, instanceContentData
-        );
+        ));
+        if (!newInstance) {
+          chapters.push(chapter);
+          this.columnNodes.push(columnNode);
+          continue;
+        }
         chapter.instance = newInstance;
         this.parent.bubbleUp(newInstance, 'resize', this.parent);
 

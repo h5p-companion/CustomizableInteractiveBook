@@ -1,0 +1,36 @@
+{{!
+    @template local_h5pchapteraccess/inactive_chapters
+
+    Diagnostic list of chapter records absent from the current manifest.
+}}
+{{#haschapters}}
+<section class="mt-4" aria-labelledby="local-h5pca-inactive-heading">
+    <h2 class="h4" id="local-h5pca-inactive-heading">{{heading}}</h2>
+    <p>{{description}}</p>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <caption>{{caption}}</caption>
+            <thead>
+                <tr>
+                    <th scope="col">{{positionlabel}}</th>
+                    <th scope="col">{{titlelabel}}</th>
+                    <th scope="col">{{uuidlabel}}</th>
+                    <th scope="col">{{stablelabel}}</th>
+                    <th scope="col">{{modelabel}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{#chapters}}
+                <tr>
+                    <td>{{position}}</td>
+                    <td>{{title}}</td>
+                    <td><code>{{uuid}}</code></td>
+                    <td>{{stable}}</td>
+                    <td>{{mode}}</td>
+                </tr>
+                {{/chapters}}
+            </tbody>
+        </table>
+    </div>
+</section>
+{{/haschapters}}
