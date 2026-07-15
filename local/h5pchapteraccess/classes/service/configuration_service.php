@@ -31,8 +31,8 @@ use mod_h5pactivity\local\manager;
  */
 final class configuration_service {
 
-    /** Modes editable by this version of the manual interface. */
-    public const EDITABLE_MODES = ['open', 'locked'];
+    /** Modes editable by the manual interface. */
+    public const EDITABLE_MODES = ['open', 'locked', 'conditional'];
 
     /** @var \moodle_database Moodle database connection. */
     private \moodle_database $db;
@@ -258,6 +258,8 @@ final class configuration_service {
      * @param \stdClass $data Validated form data
      */
     public function save(int $cmid, \stdClass $data): void {
+        global $CFG;
+
         $context = \context_module::instance($cmid);
         require_capability('local/h5pchapteraccess:manage', $context);
 
@@ -285,6 +287,9 @@ final class configuration_service {
             $mode = property_exists($data, $modefield) ? $data->{$modefield} : $chapter->accessmode;
             if (!in_array($mode, self::EDITABLE_MODES, true)) {
                 throw new \invalid_parameter_exception('Invalid chapter access mode.');
+            }
+            if ($mode === 'conditional' && empty($CFG->enableavailability)) {
+                throw new \invalid_parameter_exception('Conditional availability is disabled for this site.');
             }
 
             $chapter->accessmode = $mode;

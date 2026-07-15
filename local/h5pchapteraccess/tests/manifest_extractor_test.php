@@ -65,6 +65,28 @@ final class manifest_extractor_test extends \basic_testcase {
     }
 
     /**
+     * The historical config.chapters wrapper remains supported.
+     */
+    public function test_config_chapters_wrapper_remains_supported(): void {
+        $json = json_encode((object) [
+            'config' => (object) [
+                'chapters' => [$this->chapter_data('uuid-a', 'Wrapped')],
+            ],
+        ], JSON_THROW_ON_ERROR);
+
+        $manifest = (new manifest_extractor())->create_manifest_from_json(
+            10,
+            20,
+            'content-hash',
+            manifest_extractor::MACHINE_NAME,
+            $json
+        );
+
+        $this->assertSame('uuid-a', $manifest->get_chapters()[0]->get_id());
+        $this->assertSame('Wrapped', $manifest->get_chapters()[0]->get_title());
+    }
+
+    /**
      * A different main library is rejected.
      */
     public function test_incorrect_library(): void {
@@ -167,7 +189,7 @@ final class manifest_extractor_test extends \basic_testcase {
      */
     private function book_json(array $chapters): string {
         return json_encode((object) [
-            'config' => (object) ['chapters' => $chapters],
+            'chapters' => $chapters,
         ], JSON_THROW_ON_ERROR);
     }
 }

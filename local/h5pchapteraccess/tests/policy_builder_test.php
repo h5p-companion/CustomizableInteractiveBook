@@ -68,6 +68,24 @@ final class policy_builder_test extends \advanced_testcase {
     }
 
     /**
+     * A context hydrated with a string instance ID still matches the typed manifest CMID.
+     */
+    public function test_database_string_context_instanceid_matches_manifest(): void {
+        $this->resetAfterTest();
+        [$course, $cmid, $context] = $this->create_activity();
+        $manifest = $this->manifest($cmid);
+        $this->synchronize_as_admin($manifest);
+        $this->set_student($course);
+
+        // Reproduce the scalar type returned by the production database driver.
+        $context->instanceid = (string) $context->instanceid;
+        $policy = (new policy_builder())->build_from_manifest($manifest, $context);
+
+        $this->assertTrue($policy['required']);
+        $this->assertFalse($policy['teacherBypass']);
+    }
+
+    /**
      * A specific message wins over visible Availability API information.
      */
     public function test_specific_plain_text_message_precedes_condition_information(): void {

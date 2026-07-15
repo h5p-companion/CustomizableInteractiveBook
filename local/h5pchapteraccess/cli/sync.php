@@ -24,25 +24,9 @@
 
 define('CLI_SCRIPT', true);
 
-$configpath = __DIR__ . '/../../../config.php';
-if (!is_readable($configpath) && isset($argv[0])) {
-    // Development junctions/symlinks can make __DIR__ resolve outside the Moodle tree.
-    // In that case, derive the root from the path used to invoke this script, without resolving links.
-    $invokedpath = $argv[0];
-    if (!preg_match('~^(?:[a-zA-Z]:[\\\\/]|/)~', $invokedpath)) {
-        $invokedpath = getcwd() . DIRECTORY_SEPARATOR . $invokedpath;
-    }
-    $invokedconfigpath = dirname($invokedpath, 4) . '/config.php';
-    if (is_readable($invokedconfigpath)) {
-        $configpath = $invokedconfigpath;
-    }
-}
-if (!is_readable($configpath)) {
-    fwrite(STDERR, "Moodle config.php could not be located.\n");
-    exit(1);
-}
-
-require($configpath);
+$configpath = require(__DIR__ . '/../bootstrap.php');
+require_once($configpath);
+unset($configpath);
 require_once($CFG->libdir . '/clilib.php');
 
 use local_h5pchapteraccess\service\manifest_extractor;

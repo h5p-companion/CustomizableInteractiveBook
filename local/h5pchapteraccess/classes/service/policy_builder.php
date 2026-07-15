@@ -117,7 +117,9 @@ final class policy_builder {
     public function build_from_manifest(manifest $manifest, \context_module $context): array {
         global $USER;
 
-        if ($context->instanceid !== $manifest->get_cmid()) {
+        // Context records are commonly hydrated from the database with numeric
+        // fields represented as strings, while the manifest DTO is strictly typed.
+        if ((int) $context->instanceid !== $manifest->get_cmid()) {
             throw new \coding_exception('The policy context does not match the manifest course module.');
         }
         require_capability('mod/h5pactivity:view', $context);

@@ -261,17 +261,26 @@ final class manifest_extractor {
             $parameters = $parameters->params;
         }
 
-        if (!isset($parameters->config)
-                || !is_object($parameters->config)
-                || !isset($parameters->config->chapters)
-                || !is_array($parameters->config->chapters)
-                || $parameters->config->chapters === []) {
+        // The deployed library stores `chapters` at the root, matching its
+        // semantics.json. Keep the historical `config.chapters` wrapper as a
+        // defensive compatibility path for content created by earlier builds.
+        $chapterparameters = null;
+        if (isset($parameters->chapters) && is_array($parameters->chapters)) {
+            $chapterparameters = $parameters->chapters;
+        } else if (isset($parameters->config)
+                && is_object($parameters->config)
+                && isset($parameters->config->chapters)
+                && is_array($parameters->config->chapters)) {
+            $chapterparameters = $parameters->config->chapters;
+        }
+
+        if ($chapterparameters === null || $chapterparameters === []) {
             throw new unsupported_content_exception(unsupported_content_exception::INVALID_CHAPTERS);
         }
 
         $chapters = [];
         $seenids = [];
-        foreach ($parameters->config->chapters as $position => $chapterdata) {
+        foreach ($chapterparameters as $position => $chapterdata) {
             if (!is_object($chapterdata)) {
                 throw new unsupported_content_exception(
                     unsupported_content_exception::INVALID_CHAPTERS,

@@ -72,5 +72,25 @@ function xmldb_local_h5pchapteraccess_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026071406, 'local', 'h5pchapteraccess');
     }
 
+    if ($oldversion < 2026071500) {
+        // Activity navigation and management-form correction; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071500, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071501) {
+        // Junction-safe web and CLI bootstrap; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071501, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071502) {
+        // Safe lazy synchronization when the initial request has no sesskey; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071502, 'local', 'h5pchapteraccess');
+    }
+
+    if ($oldversion < 2026071503) {
+        // Normalize the module context ID before policy validation; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071503, 'local', 'h5pchapteraccess');
+    }
+
     return true;
 }

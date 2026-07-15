@@ -22,7 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require(__DIR__ . '/../../config.php');
+$configpath = require(__DIR__ . '/bootstrap.php');
+require_once($configpath);
+unset($configpath);
 
 use local_h5pchapteraccess\form\chapter_form;
 use local_h5pchapteraccess\service\chapter_configuration_service;

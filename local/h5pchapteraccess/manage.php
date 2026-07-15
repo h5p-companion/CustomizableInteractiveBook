@@ -22,7 +22,9 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-require(__DIR__ . '/../../config.php');
+$configpath = require(__DIR__ . '/bootstrap.php');
+require_once($configpath);
+unset($configpath);
 
 use local_h5pchapteraccess\form\manage_form;
 use local_h5pchapteraccess\output\activity_summary;
@@ -72,7 +74,8 @@ if ($action === 'sync') {
 // An automatic synchronization is performed only when persistence is stale. The
 // intermediate same-site redirect obtains a valid sesskey before any database write.
 if ($service->needs_synchronization($manifest)) {
-    if (!confirm_sesskey()) {
+    $requestsesskey = optional_param('sesskey', '', PARAM_RAW);
+    if ($requestsesskey === '' || !confirm_sesskey($requestsesskey)) {
         redirect(new moodle_url($pageurl, ['sesskey' => sesskey()]));
     }
     $service->synchronize_manifest($manifest);

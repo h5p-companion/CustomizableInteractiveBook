@@ -35,6 +35,8 @@ final class manage_form extends \moodleform {
      * Define the activity and chapter controls.
      */
     public function definition(): void {
+        global $CFG;
+
         $mform = $this->_form;
         $cmid = (int) $this->_customdata['cmid'];
         $chapters = $this->_customdata['chapters'];
@@ -127,29 +129,13 @@ final class manage_form extends \moodleform {
                 continue;
             }
 
-            if ($chapter->editurl instanceof \moodle_url) {
+            if ($chapter->accessmode === 'conditional' && $chapter->editurl instanceof \moodle_url) {
                 $editbutton = \html_writer::link(
                     $chapter->editurl,
                     get_string('editrestrictions', 'local_h5pchapteraccess'),
                     ['class' => 'btn btn-secondary']
                 );
                 $mform->addElement('static', 'editrestrictions_' . $recordid, '', $editbutton);
-            }
-
-            if ($chapter->accessmode === 'conditional') {
-                $mform->addElement(
-                    'static',
-                    'conditionalmode_' . $recordid,
-                    get_string('accessmode', 'local_h5pchapteraccess'),
-                    s(get_string('modeconditional', 'local_h5pchapteraccess'))
-                );
-                $mform->addElement(
-                    'static',
-                    'conditionalmessage_' . $recordid,
-                    get_string('specificmessage', 'local_h5pchapteraccess'),
-                    s((string) ($chapter->lockedmessage ?? ''))
-                );
-                continue;
             }
 
             if (!in_array($chapter->accessmode, configuration_service::EDITABLE_MODES, true)) {
@@ -177,6 +163,7 @@ final class manage_form extends \moodleform {
                 [
                     'open' => get_string('modeopen', 'local_h5pchapteraccess'),
                     'locked' => get_string('modelocked', 'local_h5pchapteraccess'),
+                    'conditional' => get_string('modeconditional', 'local_h5pchapteraccess'),
                 ]
             );
             $mform->setType($modefield, PARAM_ALPHA);
@@ -189,7 +176,19 @@ final class manage_form extends \moodleform {
             );
             $mform->setType($messagefield, PARAM_TEXT);
             $mform->addHelpButton($messagefield, 'specificmessage', 'local_h5pchapteraccess');
-            $mform->disabledIf($messagefield, $modefield, 'neq', 'locked');
+            $mform->disabledIf($messagefield, $modefield, 'eq', 'open');
+
+            if ($chapter->accessmode !== 'conditional') {
+                $mform->addElement(
+                    'static',
+                    'conditionalhint_' . $recordid,
+                    '',
+                    s(get_string(
+                        empty($CFG->enableavailability) ? 'availabilitydisabled' : 'conditionaleditafter_save',
+                        'local_h5pchapteraccess'
+                    ))
+                );
+            }
         }
 
         $this->add_action_buttons(true, get_string('savechanges'));
@@ -203,6 +202,8 @@ final class manage_form extends \moodleform {
      * @return array
      */
     public function validation($data, $files): array {
+        global $CFG;
+
         $errors = parent::validation($data, $files);
         foreach ($this->_customdata['chapters'] as $chapter) {
             if (!(bool) $chapter->stableid
@@ -212,6 +213,9 @@ final class manage_form extends \moodleform {
             $field = 'accessmode_' . $chapter->id;
             if (isset($data[$field]) && !in_array($data[$field], configuration_service::EDITABLE_MODES, true)) {
                 $errors[$field] = get_string('invalidaccessmode', 'local_h5pchapteraccess');
+            }
+            if (($data[$field] ?? '') === 'conditional' && empty($CFG->enableavailability)) {
+                $errors[$field] = get_string('availabilitydisabled', 'local_h5pchapteraccess');
             }
         }
         return $errors;

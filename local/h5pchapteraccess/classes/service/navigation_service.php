@@ -41,20 +41,12 @@ final class navigation_service {
 
         $page = $settingsnav->get_page();
         $cm = $page->cm;
-        if (!$cm || $cm->modname !== 'h5pactivity') {
+        if (!$cm
+                || $cm->modname !== 'h5pactivity'
+                || (int) $context->instanceid !== (int) $cm->id) {
             return;
         }
         if (!has_capability('local/h5pchapteraccess:manage', $context)) {
-            return;
-        }
-
-        try {
-            $manifest = (new manifest_extractor())->extract((int) $cm->id);
-            if ($manifest->get_machine_name() !== manifest_extractor::MACHINE_NAME) {
-                return;
-            }
-        } catch (\Throwable $exception) {
-            // Navigation must remain usable when an activity is invalid or has not been deployed by core_h5p yet.
             return;
         }
 
@@ -62,14 +54,19 @@ final class navigation_service {
         if (!$modulenode) {
             return;
         }
+        if ($modulenode->get('local_h5pchapteraccess_manage')) {
+            return;
+        }
 
         $url = new \moodle_url('/local/h5pchapteraccess/manage.php', ['cmid' => $cm->id]);
-        $modulenode->add(
+        $node = $modulenode->add(
             get_string('navigationtitle', 'local_h5pchapteraccess'),
             $url,
             \navigation_node::TYPE_SETTING,
             null,
-            'local_h5pchapteraccess_manage'
+            'local_h5pchapteraccess_manage',
+            new \pix_icon('i/settings', '')
         );
+        $node->set_force_into_more_menu(true);
     }
 }
