@@ -48,9 +48,9 @@ After updating either the plugin or the H5P library, purge Moodle caches. The ne
 Both capabilities use `context_module`:
 
 - `local/h5pchapteraccess:manage`: edit activity and chapter configuration. Allowed by default for manager and editing teacher archetypes.
-- `local/h5pchapteraccess:viewlocked`: view every chapter through a runtime bypass. Allowed by default for manager and editing teacher archetypes.
+- `local/h5pchapteraccess:viewlocked`: view every chapter through a runtime bypass while Moodle editing mode is enabled. Allowed by default for manager and editing teacher archetypes.
 
-`viewlocked` changes only the current viewer's returned policy. It never changes the configuration students receive.
+With editing mode disabled, managers and teachers receive the same chapter policy as students. `viewlocked` never changes the stored configuration students receive.
 
 The AJAX endpoint also requires `mod/h5pactivity:view`, normal activity login, and visibility/access checks.
 
@@ -240,7 +240,7 @@ Uninstallation does not modify or remove H5P activities, H5P packages, child lib
 - **Package changes are not visible:** use **Synchronize again**, run the CLI sync, and purge MUC caches.
 - **Conditional mode is unavailable:** enable Moodle availability and the required availability plugins.
 - **A condition is always blocked:** enable developer debugging and validate its JSON through the standard editor; malformed JSON fails closed.
-- **Teacher sees content that students cannot:** this is the intended `viewlocked` bypass. Use switch-role or a real student account for verification.
+- **Teacher needs to preview the student experience:** turn Moodle editing mode off and reload the activity. Turn editing mode on to activate the `viewlocked` bypass.
 - **PHPUnit does not start:** configure `$CFG->phpunit_prefix` and `$CFG->phpunit_dataroot`, initialize the test database, and keep it separate from production.
 - **AMD changes do not load:** regenerate `amd/build` with Grunt and purge Moodle caches; never edit the minified files directly.
 

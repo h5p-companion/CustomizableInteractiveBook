@@ -187,18 +187,40 @@ final class availability_evaluator_test extends \advanced_testcase {
     }
 
     /**
-     * The plugin bypass capability wins over locked mode.
+     * The plugin bypass capability wins over locked mode while editing is enabled.
      */
     public function test_viewlocked_capability_bypasses_restriction(): void {
+        global $USER;
+
         [$course, $cm] = $this->create_fixture();
         $teacher = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $USER->editing = 1;
 
         $result = $this->evaluate($this->chapter('locked'), $course, $cm, $teacher->id);
 
         $this->assertTrue($result['available']);
         $this->assertTrue($result['hasRestrictions']);
         $this->assertSame('', $result['information']);
+    }
+
+    /**
+     * A teacher with editing disabled sees the same locked result as a student.
+     */
+    public function test_viewlocked_capability_without_editing_does_not_bypass(): void {
+        global $USER;
+
+        [$course, $cm] = $this->create_fixture();
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $USER->editing = 0;
+
+        $result = $this->evaluate($this->chapter('locked'), $course, $cm, $teacher->id);
+
+        $this->assertFalse($result['available']);
+        $this->assertTrue($result['hasRestrictions']);
     }
 
     /**

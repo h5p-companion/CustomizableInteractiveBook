@@ -270,10 +270,10 @@ final class policy_builder_test extends \advanced_testcase {
     }
 
     /**
-     * The viewlocked capability produces a teacher bypass without changing stored rules.
+     * The viewlocked capability produces a teacher bypass while editing is enabled.
      */
     public function test_teacher_receives_bypass_and_all_chapters_available(): void {
-        global $DB;
+        global $DB, $USER;
         $this->resetAfterTest();
         [$course, $cmid, $context] = $this->create_activity();
         $manifest = $this->manifest($cmid);
@@ -291,12 +291,44 @@ final class policy_builder_test extends \advanced_testcase {
         $teacher = $this->getDataGenerator()->create_user();
         $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
         $this->setUser($teacher);
+        $USER->editing = 1;
 
         $policy = (new policy_builder())->build_from_manifest($manifest, $context);
 
         $this->assertTrue($policy['teacherBypass']);
         $this->assertTrue($policy['chapters']['uuid-b']['available']);
         $this->assertSame('locked', $DB->get_field('local_h5pca_chapter', 'accessmode', ['id' => $chapter->id]));
+    }
+
+    /**
+     * A teacher with editing disabled receives the normal chapter policy.
+     */
+    public function test_teacher_without_editing_sees_locked_chapters(): void {
+        global $DB, $USER;
+
+        $this->resetAfterTest();
+        [$course, $cmid, $context] = $this->create_activity();
+        $manifest = $this->manifest($cmid);
+        $this->synchronize_as_admin($manifest);
+
+        $bookid = $DB->get_field('local_h5pca_book', 'id', ['cmid' => $cmid], MUST_EXIST);
+        $chapter = $DB->get_record(
+            'local_h5pca_chapter',
+            ['bookid' => $bookid, 'chapteruuid' => 'uuid-b'],
+            '*',
+            MUST_EXIST
+        );
+        $chapter->accessmode = 'locked';
+        $DB->update_record('local_h5pca_chapter', $chapter);
+        $teacher = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+        $USER->editing = 0;
+
+        $policy = (new policy_builder())->build_from_manifest($manifest, $context);
+
+        $this->assertFalse($policy['teacherBypass']);
+        $this->assertFalse($policy['chapters']['uuid-b']['available']);
     }
 
     /**

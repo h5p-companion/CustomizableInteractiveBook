@@ -92,5 +92,10 @@ function xmldb_local_h5pchapteraccess_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026071503, 'local', 'h5pchapteraccess');
     }
 
+    if ($oldversion < 2026071600) {
+        // Restore runtime content identity and editing-mode bypass behavior; no schema change is required.
+        upgrade_plugin_savepoint(true, 2026071600, 'local', 'h5pchapteraccess');
+    }
+
     return true;
 }

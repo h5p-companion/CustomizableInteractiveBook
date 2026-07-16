@@ -2,6 +2,12 @@
 
 All notable changes to `local_h5pchapteraccess` are documented here.
 
+## 1.0.7 - 2026-07-16
+
+- Restored runtime H5P content ID resolution for referenced mod_h5pactivity packages, preventing policy requests from falling back to allow-all.
+- Restored the editing-mode rule for `viewlocked`: teachers preview the student policy with editing disabled and bypass only with editing enabled.
+- Advanced the plugin version beyond the already-installed database version after the source tree regressed to 1.0.4.
+
 ## 1.0.4 - 2026-07-15
 
 - Fixed policy generation when Moodle's database driver hydrates the module context instance ID as a numeric string.

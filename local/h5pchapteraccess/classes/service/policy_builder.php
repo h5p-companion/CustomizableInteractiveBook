@@ -125,7 +125,7 @@ final class policy_builder {
         require_capability('mod/h5pactivity:view', $context);
 
         $userid = (int) $USER->id;
-        $teacherbypass = has_capability('local/h5pchapteraccess:viewlocked', $context, $userid);
+        $teacherbypass = $this->availability->is_bypass_active($context, $userid);
         $book = $this->books->get_by_cmid($manifest->get_cmid());
 
         // No activity configuration means that the integration has not been enabled.
@@ -144,9 +144,9 @@ final class policy_builder {
             return $this->allow_all($manifest, false, $teacherbypass);
         }
 
-        // A user with the explicit bypass capability does not need per-chapter
-        // Availability API evaluation. Besides being deterministic, returning
-        // here avoids loading modinfo and evaluating conditions needlessly.
+        // A user with the explicit capability and active Moodle editing mode
+        // does not need per-chapter Availability API evaluation. Returning here
+        // avoids loading modinfo and evaluating conditions needlessly.
         if ($teacherbypass) {
             return $this->allow_all($manifest, true, true);
         }
@@ -189,7 +189,7 @@ final class policy_builder {
      *
      * @param manifest $manifest Trusted manifest
      * @param bool $required Whether the host integration is required
-     * @param bool $teacherbypass Whether the current user has bypass capability
+     * @param bool $teacherbypass Whether the current user has an active editing bypass
      * @return array Browser contract fields
      */
     private function allow_all(manifest $manifest, bool $required, bool $teacherbypass): array {

@@ -38,7 +38,8 @@ O campo **Resultado obtido** distingue validações automatizadas já executadas
 | AND | Estudante | Data e grupo | B somente se ambas verdadeiras | Apenas disponíveis | Apenas disponíveis | Informação combinada | PHPUnit escrito; execução pendente por ambiente |
 | OR | Estudante | Data ou grupo | B se uma for verdadeira | Apenas disponíveis | Apenas disponíveis | Informação combinada | PHPUnit escrito; execução pendente por ambiente |
 | Restrição oculta | Estudante | B bloqueado e `showrestriction=0` | A e C | A + C | Denominador 2 | Específica, padrão ou genérica; sem detalhes | PHPUnit escrito; execução pendente por ambiente |
-| Bypass | Professor editor | Qualquer regra | A, B e C disponíveis | Todos | Denominador 3 | Nenhuma; `teacherBypass=true` | PHPUnit escrito e caminho otimizado; execução pendente |
+| Bypass com edição ligada | Professor editor | Qualquer regra | A, B e C disponíveis | Todos | Denominador 3 | Nenhuma; `teacherBypass=true` | PHPUnit escrito e caminho otimizado; execução pendente |
+| Pré-visualização com edição desligada | Professor editor | B bloqueado | A e C | A + C | Denominador 2 | Mensagem configurada; `teacherBypass=false` | PHPUnit escrito; execução pendente |
 | Políticas diferentes | Dois estudantes | Grupo/nota diferentes | Resultado individual | Soma individual | Denominador individual | Mensagem individual | PHPUnit escrito; execução pendente por ambiente |
 
 ## Matriz de comunicação e segurança

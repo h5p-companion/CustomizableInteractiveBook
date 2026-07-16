@@ -42,7 +42,7 @@ final class availability_evaluator {
         $hasrestrictions = $mode === 'locked' || ($mode === 'conditional' && $availability !== '');
         $context = \context_module::instance($cm->id);
 
-        if (has_capability('local/h5pchapteraccess:viewlocked', $context, $userid)) {
+        if ($this->is_bypass_active($context, $userid)) {
             return $this->result(true, '', $hasrestrictions);
         }
 
@@ -93,6 +93,25 @@ final class availability_evaluator {
         }
 
         return $this->result($available, $information, true);
+    }
+
+    /**
+     * Determine whether the current viewer explicitly enabled the editing bypass.
+     *
+     * Moodle stores editing mode in the authenticated session. Requiring both
+     * that state and the module capability lets teachers preview the student
+     * policy simply by turning editing mode off.
+     *
+     * @param \context_module $context Activity context
+     * @param int $userid User being evaluated
+     * @return bool
+     */
+    public function is_bypass_active(\context_module $context, int $userid): bool {
+        global $USER;
+
+        return (int) ($USER->id ?? 0) === $userid
+            && !empty($USER->editing)
+            && has_capability('local/h5pchapteraccess:viewlocked', $context, $userid);
     }
 
     /**

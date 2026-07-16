@@ -2,6 +2,10 @@
 
 All notable changes to `H5P.CustomizableInteractiveBook` are documented here. H5P library versions use `majorVersion.minorVersion.patchVersion` from `library.json`.
 
+## 1.0.35 - 2026-07-16
+
+- Aligned the source library version with the already deployed HostBridge-enabled Moodle library.
+
 ## 1.0.34 - 2026-07-14
 
 - Documented the completed host-policy architecture, contract, state, scoring, build, tests, and security limits.

@@ -87,7 +87,7 @@ O manifesto do navegador serve para anunciar a estrutura ao host genérico. No M
 - `message` é texto simples;
 - ausência de item explícito no H5P normaliza para disponível;
 - `required = false` representa integração ausente ou desabilitada;
-- `teacherBypass = true` informa que a liberação decorreu da capability de bypass;
+- `teacherBypass = true` informa que a liberação decorreu da capability de bypass com o modo de edição ativo;
 - nunca se usa `targetOrigin = "*"`.
 
 ## Sequência de mensagens
@@ -137,7 +137,7 @@ O `ready` pode ser reenviado durante a espera. O AMD Bridge responde uma única 
 
 ## Fluxo com bypass
 
-Um usuário com `local/h5pchapteraccess:viewlocked` recebe `teacherBypass = true` e todos os IDs disponíveis. O Policy Builder retorna antes de carregar `modinfo` ou avaliar condições individuais. A configuração persistida dos estudantes não é modificada.
+Um usuário com `local/h5pchapteraccess:viewlocked` recebe `teacherBypass = true` e todos os IDs disponíveis somente enquanto o modo de edição do Moodle estiver ligado. Com a edição desligada, professor e estudante recebem a mesma política. O Policy Builder retorna antecipadamente apenas no bypass ativo, sem modificar a configuração persistida dos estudantes.
 
 ## Fluxo sem plugin ou integração desabilitada
 

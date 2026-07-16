@@ -146,17 +146,33 @@ final class manifest_extractor {
             false
         );
 
-        // This public API resolves referenced files, including Content Bank aliases,
-        // while retaining the normal pluginfile capability checks.
-        [$originalfile, $h5p] = api::get_original_content_from_pluginfile_url(
+        // Keep both H5P identities when the activity package is a reference.
+        // The player announces the deployment linked to the module file, while
+        // the original API is still needed to read the referenced package.
+        [$runtimefile, $runtimeh5p] = api::get_content_from_pluginfile_url(
+            $fileurl->out(false),
+            true,
+            false
+        );
+        [$originalfile, $originalh5p] = api::get_original_content_from_pluginfile_url(
             $fileurl->out(false),
             true,
             false
         );
 
-        if (!$originalfile) {
+        if (!$runtimefile || !$originalfile) {
             throw new invalid_activity_exception(invalid_activity_exception::PACKAGE_NOT_FOUND, $cmid);
         }
+
+        // Prefer the current runtime deployment because this is the contentId
+        // passed to H5P constructors and announced through postMessage. Before
+        // the player redeploys an edited package, fall back to the original
+        // content record so management can still inspect the latest package.
+        $runtimehash = $runtimefile->get_contenthash();
+        $runtimeiscurrent = $runtimeh5p
+            && is_string($runtimeh5p->contenthash ?? null)
+            && hash_equals($runtimehash, $runtimeh5p->contenthash);
+        $h5p = $runtimeiscurrent ? $runtimeh5p : $originalh5p;
         if (!$h5p) {
             throw new invalid_activity_exception(invalid_activity_exception::H5P_NOT_FOUND, $cmid);
         }
@@ -189,14 +205,18 @@ final class manifest_extractor {
         }
 
         $json = null;
-        try {
-            $content = $this->factory->get_core()->loadContent((int) $h5p->id);
-            if (is_array($content) && isset($content['params']) && is_string($content['params'])) {
-                $json = $content['params'];
+        $contentrecordiscurrent = is_string($h5p->contenthash ?? null)
+            && hash_equals($contenthash, $h5p->contenthash);
+        if ($contentrecordiscurrent) {
+            try {
+                $content = $this->factory->get_core()->loadContent((int) $h5p->id);
+                if (is_array($content) && isset($content['params']) && is_string($content['params'])) {
+                    $json = $content['params'];
+                }
+            } catch (\Throwable $exception) {
+                // A missing/unreadable API payload is handled by the documented package fallback below.
+                $json = null;
             }
-        } catch (\Throwable $exception) {
-            // A missing/unreadable API payload is handled by the documented package fallback below.
-            $json = null;
         }
 
         if ($json === null) {
