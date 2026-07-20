@@ -193,12 +193,19 @@ final class manifest_extractor {
             );
         }
 
+        $libraryversion = [
+            'major' => (int) $library->majorversion,
+            'minor' => (int) $library->minorversion,
+            'patch' => (int) $library->patchversion,
+        ];
+
         $contenthash = $originalfile->get_contenthash();
         $cached = $this->cache->get(
             $cmid,
             (int) $h5p->id,
             $contenthash,
-            $library->machinename
+            $library->machinename,
+            $libraryversion
         );
         if ($cached !== null) {
             return $cached;
@@ -228,7 +235,8 @@ final class manifest_extractor {
             (int) $h5p->id,
             $contenthash,
             $library->machinename,
-            $json
+            $json,
+            $libraryversion
         );
         $this->cache->set($manifest);
         return $manifest;
@@ -245,6 +253,7 @@ final class manifest_extractor {
      * @param string $contenthash Package content hash
      * @param string $machinename Main library machine name
      * @param string $json H5P parameters JSON
+     * @param array|null $libraryversion Installed main library version
      * @return manifest
      * @throws unsupported_content_exception
      */
@@ -253,7 +262,8 @@ final class manifest_extractor {
         int $contentid,
         string $contenthash,
         string $machinename,
-        string $json
+        string $json,
+        ?array $libraryversion = null
     ): manifest {
         if ($machinename !== self::MACHINE_NAME) {
             throw new unsupported_content_exception(
@@ -344,7 +354,14 @@ final class manifest_extractor {
             );
         }
 
-        return new manifest($cmid, $machinename, $contentid, $contenthash, $chapters);
+        return new manifest(
+            $cmid,
+            $machinename,
+            $contentid,
+            $contenthash,
+            $chapters,
+            $libraryversion
+        );
     }
 
     /**

@@ -9,7 +9,7 @@ The implementation does not modify Moodle core, `mod_h5pactivity`, `core_h5p`, o
 - Moodle 4.5, build `2024100700` or newer within the 4.5 branch;
 - PHP and database versions supported by that Moodle installation;
 - `mod_h5pactivity` and `core_h5p` from Moodle 4.5;
-- the matching `H5P.CustomizableInteractiveBook` library with the version 1 host contract;
+- `H5P.CustomizableInteractiveBook` 1.0.32 or newer, containing the version 1 host contract;
 - JavaScript enabled for the H5P iframe bridge;
 - Availability plugins required by the conditions selected by teachers.
 
@@ -17,14 +17,17 @@ The plugin component is `local_h5pchapteraccess` and its code must be located at
 
 ## Installation
 
-1. Install or update the compatible H5P library through Moodle's H5P library administration workflow.
-2. Copy this directory to the Moodle code tree:
+This solution has two independent deployable artifacts: the Moodle plugin and the modified H5P library. Installing one does not install the other.
+
+1. Build and package the compatible H5P library from the repository `src` directory, then install or update it through Moodle's H5P library administration workflow. A Git checkout does not contain `src/dist`, because those generated assets are intentionally ignored; run `npm ci` and `npm run build` before packaging the library.
+2. Confirm that Moodle reports `H5P.CustomizableInteractiveBook` version 1.0.32 or newer. Older releases do not send the version 1 `ready` message and therefore use the intentional H5P allow-all fallback.
+3. Copy this plugin directory to the Moodle code tree:
 
    ```text
    <moodle>/local/h5pchapteraccess
    ```
 
-3. From the Moodle root, run:
+4. From the Moodle root, run:
 
    ```bash
    php admin/cli/upgrade.php --non-interactive
@@ -33,7 +36,8 @@ The plugin component is `local_h5pchapteraccess` and its code must be located at
 
    Alternatively, complete the standard upgrade from **Site administration → Notifications**.
 
-4. Open a compatible H5P activity as a manager or editing teacher and select **Chapter access** in the activity settings navigation.
+5. Open a compatible H5P activity as a manager or editing teacher and select **Chapter access** in the activity settings navigation.
+6. On that Moodle installation, enable the integration and configure the chapters. The records in `local_h5pca_book` and `local_h5pca_chapter` belong to the site's database; copying the plugin folder or the H5P activity file does not copy those records.
 
 Do not deploy `node_modules/`, test data, temporary build directories, or uncompiled `amd/src` as a substitute for the generated `amd/build` files.
 
@@ -95,6 +99,7 @@ Open:
 
 The page requires login and `local/h5pchapteraccess:manage`, validates that the module is `h5pactivity`, confirms the main library, and synchronizes the manifest. It supports:
 
+- an installation checklist showing the deployed H5P version, generated AMD bridge, integration state, and number of configured rules;
 - enabling or disabling integration for the activity;
 - an activity-level default locked message;
 - explicit re-synchronization;
@@ -234,7 +239,8 @@ Uninstallation does not modify or remove H5P activities, H5P packages, child lib
 
 ## Troubleshooting
 
-- **All chapters appear after a delay:** confirm the activity integration is enabled, the compatible AMD build is deployed, caches are purged, and the iframe is same-origin. The H5P fallback is intentionally allow-all.
+- **It works on one computer but not another:** plugin files, the modified H5P library, and database rules are three separate requirements. Install `H5P.CustomizableInteractiveBook` 1.0.32 or newer on the destination Moodle, run the plugin upgrade, purge caches, and configure the destination activity. Copying only `local/h5pchapteraccess` cannot transfer either the H5P runtime or the source site's database rows.
+- **All chapters appear after a delay:** open the management page and review its installation checks. Confirm the activity integration is enabled, at least one chapter is locked or conditional, the compatible AMD build is deployed, caches are purged, and the iframe is same-origin. The H5P fallback is intentionally allow-all.
 - **Chapter access menu is absent:** confirm the activity uses `H5P.CustomizableInteractiveBook` and the user has `manage` in the module context.
 - **A chapter cannot be configured:** it is inactive or has an unstable legacy ID. Republish with a stable `subContentId` and synchronize.
 - **Package changes are not visible:** use **Synchronize again**, run the CLI sync, and purge MUC caches.

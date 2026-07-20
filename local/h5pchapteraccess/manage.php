@@ -31,6 +31,7 @@ use local_h5pchapteraccess\output\activity_summary;
 use local_h5pchapteraccess\output\inactive_chapters;
 use local_h5pchapteraccess\service\chapter_configuration_service;
 use local_h5pchapteraccess\service\configuration_service;
+use local_h5pchapteraccess\service\deployment_diagnostics;
 use local_h5pchapteraccess\service\manifest_cache;
 
 $cmid = required_param('cmid', PARAM_INT);
@@ -116,7 +117,12 @@ $summary = new activity_summary(
     $activitydata->activity,
     $activitydata->context,
     $manifest,
-    $configuration->book
+    (new deployment_diagnostics())->inspect(
+        $manifest,
+        $configuration->book,
+        $configuration->activechapters
+    ),
+    $activityurl
 );
 echo $OUTPUT->render_from_template(
     'local_h5pchapteraccess/activity_summary',

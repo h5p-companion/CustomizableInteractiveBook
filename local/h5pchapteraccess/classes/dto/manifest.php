@@ -43,6 +43,9 @@ final class manifest implements \JsonSerializable {
     /** @var string Deterministic SHA-256 hash of chapter IDs, titles and positions. */
     private string $manifesthash;
 
+    /** @var array|null Installed main library version (major, minor and patch). */
+    private ?array $libraryversion;
+
     /**
      * Constructor.
      *
@@ -51,13 +54,15 @@ final class manifest implements \JsonSerializable {
      * @param int $contentid Moodle core_h5p content ID
      * @param string $contenthash File content hash
      * @param chapter[] $chapters Ordered chapter entries
+     * @param array|null $libraryversion Installed main library version
      */
     public function __construct(
         int $cmid,
         string $machinename,
         int $contentid,
         string $contenthash,
-        array $chapters
+        array $chapters,
+        ?array $libraryversion = null
     ) {
         if ($cmid <= 0 || $contentid <= 0) {
             throw new \InvalidArgumentException('Manifest identifiers must be positive integers.');
@@ -77,11 +82,27 @@ final class manifest implements \JsonSerializable {
             $seenids[$chapter->get_id()] = true;
         }
 
+        if ($libraryversion !== null) {
+            foreach (['major', 'minor', 'patch'] as $part) {
+                if (!array_key_exists($part, $libraryversion)
+                        || !is_int($libraryversion[$part])
+                        || $libraryversion[$part] < 0) {
+                    throw new \InvalidArgumentException('The H5P library version is invalid.');
+                }
+            }
+            $libraryversion = [
+                'major' => $libraryversion['major'],
+                'minor' => $libraryversion['minor'],
+                'patch' => $libraryversion['patch'],
+            ];
+        }
+
         $this->cmid = $cmid;
         $this->machinename = $machinename;
         $this->contentid = $contentid;
         $this->contenthash = $contenthash;
         $this->chapters = array_values($chapters);
+        $this->libraryversion = $libraryversion;
         $this->manifesthash = $this->calculate_hash();
     }
 
@@ -117,6 +138,15 @@ final class manifest implements \JsonSerializable {
     /** @return string Deterministic manifest hash. */
     public function get_manifest_hash(): string {
         return $this->manifesthash;
+    }
+
+    /**
+     * Get the installed H5P main library version when known.
+     *
+     * @return array|null Defensive copy with major, minor and patch keys
+     */
+    public function get_library_version(): ?array {
+        return $this->libraryversion === null ? null : array_merge([], $this->libraryversion);
     }
 
     /**

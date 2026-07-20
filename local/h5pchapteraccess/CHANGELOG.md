@@ -2,6 +2,13 @@
 
 All notable changes to `local_h5pchapteraccess` are documented here.
 
+## 1.0.8 - 2026-07-20
+
+- Added visible deployment checks for the minimum compatible H5P library, generated Moodle AMD bridge, activity integration, and configured chapter rules.
+- Clarified that copying plugin code does not install the modified H5P runtime or transfer per-site database configuration.
+- Simplified the management form with mode explanations, chapter status badges, expandable technical IDs, and direct conditional-access buttons.
+- Preserved all policy, bypass, Availability API, and browser communication behavior.
+
 ## 1.0.7 - 2026-07-16
 
 - Restored runtime H5P content ID resolution for referenced mod_h5pactivity packages, preventing policy requests from falling back to allow-all.

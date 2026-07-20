@@ -41,10 +41,18 @@ final class manifest_cache_test extends \advanced_testcase {
         ]);
         $cache->set($manifest);
 
-        $hit = $cache->get(123, 99, 'hash-a', manifest_extractor::MACHINE_NAME);
+        $hit = $cache->get(123, 99, 'hash-a', manifest_extractor::MACHINE_NAME, [
+            'major' => 1,
+            'minor' => 0,
+            'patch' => 35,
+        ]);
         $this->assertNotNull($hit);
         $this->assertSame(99, $hit->get_content_id());
         $this->assertSame('uuid-a', $hit->get_chapters()[0]->get_id());
+        $this->assertSame(
+            ['major' => 1, 'minor' => 0, 'patch' => 35],
+            $hit->get_library_version()
+        );
 
         $this->assertNull($cache->get(123, 99, 'hash-b', manifest_extractor::MACHINE_NAME));
         $this->assertNull($cache->get(123, 99, 'hash-a', manifest_extractor::MACHINE_NAME));

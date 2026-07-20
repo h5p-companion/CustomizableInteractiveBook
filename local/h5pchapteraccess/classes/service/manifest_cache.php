@@ -53,13 +53,15 @@ final class manifest_cache {
      * @param int $contentid Current core_h5p content ID
      * @param string $contenthash Current package content hash
      * @param string $machinename Current main library machine name
+     * @param array|null $libraryversion Current main library version
      * @return manifest|null
      */
     public function get(
         int $cmid,
         int $contentid,
         string $contenthash,
-        string $machinename
+        string $machinename,
+        ?array $libraryversion = null
     ): ?manifest {
         $encoded = $this->cache->get((string) $cmid);
         if (!is_string($encoded)) {
@@ -90,7 +92,14 @@ final class manifest_cache {
                 );
             }, $data['chapters']);
 
-            return new manifest($cmid, $machinename, $contentid, $contenthash, $chapters);
+            return new manifest(
+                $cmid,
+                $machinename,
+                $contentid,
+                $contenthash,
+                $chapters,
+                $libraryversion
+            );
         } catch (\Throwable $exception) {
             $this->delete($cmid);
             return null;

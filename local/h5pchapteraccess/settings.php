@@ -15,9 +15,10 @@
 // along with Moodle. If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Settings placeholder for local_h5pchapteraccess.
+ * Site settings entry point for local_h5pchapteraccess.
  *
- * The initial plugin intentionally provides no administration interface.
+ * Access rules belong to individual H5P activities and are configured from
+ * their activity settings navigation, so there are no site-wide controls here.
  *
  * @package    local_h5pchapteraccess
  * @copyright  2026 Luiz Gustavo
