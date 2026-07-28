@@ -83,7 +83,7 @@ npm run build
 Moodle, depois de configurar o banco PHPUnit separado:
 
 ```bash
-php vendor/bin/phpunit --testsuite local_h5pchapteraccess_testsuite
+php vendor/bin/phpunit --testcompanion local_h5pchapteraccess_testcompanion
 npx grunt amd --root=local/h5pchapteraccess
 php admin/cli/purge_caches.php
 ```

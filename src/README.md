@@ -78,7 +78,7 @@ npm run build
 
 Generated production JS/CSS is written to `dist/`; do not edit it manually. Do not distribute `node_modules/`.
 
-The Node suite covers manifest identity, stable/legacy/duplicate IDs, policy normalization, available navigation, all-locked behavior, message validation, timeout, disposal, duplicate policy responses, locked runtime prevention, score filtering, and UUID state.
+The Node companion covers manifest identity, stable/legacy/duplicate IDs, policy normalization, available navigation, all-locked behavior, message validation, timeout, disposal, duplicate policy responses, locked runtime prevention, score filtering, and UUID state.
 
 ## Security limitation
 

@@ -10,7 +10,7 @@ The library is platform-neutral. It does not know about Moodle courses, groups, 
 - `src/src/scripts/access/`: chapter manifest, policy, controller, host bridge, and testable runtime helpers;
 - `src/src/scripts/`: Interactive Book application and UI components;
 - `src/src/styles/`: SCSS sources;
-- `src/tests/`: Node test suite;
+- `src/tests/`: Node test companion;
 - `local/h5pchapteraccess/`: companion Moodle 4.5 plugin;
 - `docs/architecture.md`: end-to-end architecture and trust boundaries;
 - `docs/test-plan.md`: automated and manual test matrix.
@@ -189,7 +189,7 @@ npm run lint
 npm run build
 ```
 
-The Node suite covers manifest identity and immutability, legacy and duplicate IDs, policy normalization, available navigation, all-locked behavior, host-message validation, timeout/disposal, duplicate responses, locked runtime prevention, score filtering, and state restoration by UUID.
+The Node companion covers manifest identity and immutability, legacy and duplicate IDs, policy normalization, available navigation, all-locked behavior, host-message validation, timeout/disposal, duplicate responses, locked runtime prevention, score filtering, and state restoration by UUID.
 
 The complete cross-project matrix is in [docs/test-plan.md](docs/test-plan.md).
 
