@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customizable Interactive Book - Documentação H5P Companion</title>
-    <meta name="description" content="Guia e documentação do repositório Customizable Interactive Book da H5P Companion. Soluções interativas para educação de alta qualidade.">
+    <meta name="description" content="Guia e documentação do repositório Customizable Interactive Book da H5P Companion. Soluções interativas com controle de acesso a capítulos hospedado por plataforma.">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -15,6 +15,11 @@
             <a href="https://h5p-companion.github.io/" class="brand-logo">
                 ✨ H5P Companion <span class="brand-badge">Livro Digital</span>
             </a>
+            <nav class="nav-links">
+                <a href="#docs-tecnica" class="nav-link">Documentação Técnica</a>
+                <a href="#beneficios" class="nav-link">Benefícios</a>
+                <a href="#equipe" class="nav-link">Equipe</a>
+            </nav>
             <div class="nav-controls">
                 <button id="theme-toggle" class="theme-toggle-btn" aria-label="Alternar Tema">
                     <span class="theme-toggle-icon">🌙</span>
@@ -27,67 +32,141 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="container">
-            <div class="hero-badge">📖 Livro Digital</div>
+            <div class="hero-badge">📖 Livro Digital com Controle de Acesso Hospedado</div>
             <h1 class="hero-title">
-                Transforme Aulas em <span>E-books Interativos</span>
+                Controle de Acesso por Capítulo <span>Goverado pelo Moodle</span>
             </h1>
             <p class="hero-subtitle">
-                Livro digital com temas visuais customizados, seções expansíveis e navegação rica para cursos EAD e presenciais.
+                Variante do Livro Interativo H5P com camada de acesso a capítulos controlada pela plataforma hospedeira via protocolo <code>postMessage</code> v1 e API de Disponibilidade do Moodle.
             </p>
+            <div class="hero-actions">
+                <a href="#docs-tecnica" class="btn btn-primary">Explorar Documentação Técnica</a>
+                <a href="architecture.md" class="btn btn-secondary">Ver Arquitetura (Markdown)</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Documentation Section -->
+    <section id="docs-tecnica" class="section">
+        <div class="container">
+            <div class="section-header" style="text-align: center; margin-bottom: 2rem;">
+                <h2 style="font-family: var(--font-heading); font-size: 1.8rem; margin-bottom: 0.5rem;">
+                    🛠️ Documentação Técnica & Guias de Integração
+                </h2>
+                <p style="color: var(--text-secondary); max-width: 680px; margin: 0 auto;">
+                    Especificações completas da arquitetura, protocolo de comunicação `postMessage`, plano de testes e integração com o plugin Moodle.
+                </p>
+            </div>
+
+            <div class="doc-grid">
+                <div class="doc-card">
+                    <div class="doc-icon">🏗️</div>
+                    <span class="doc-badge">Arquitetura</span>
+                    <h3>Arquitetura & Protocolo</h3>
+                    <p>Visão geral da solução, diagramas de sequência Mermaid, protocolo <code>postMessage</code> v1, validação de origem e limites de segurança.</p>
+                    <a href="architecture.md" class="doc-link">Acessar docs/architecture.md →</a>
+                </div>
+
+                <div class="doc-card">
+                    <div class="doc-icon">🧪</div>
+                    <span class="doc-badge">Testes</span>
+                    <h3>Plano de Testes Integrado</h3>
+                    <p>Matriz funcional completa, testes das regras da Availability API do Moodle, testes de ciclo de vida, navegação, score e xAPI.</p>
+                    <a href="test-plan.md" class="doc-link">Acessar docs/test-plan.md →</a>
+                </div>
+
+                <div class="doc-card">
+                    <div class="doc-icon">📖</div>
+                    <span class="doc-badge">Biblioteca H5P</span>
+                    <h3>Manual da Biblioteca H5P</h3>
+                    <p>Documentação em português da biblioteca H5P, controle de estado por UUID (<code>subContentId</code>), score parcial e instruções de build.</p>
+                    <a href="../README-pt-BR.md" class="doc-link">Acessar README-pt-BR.md →</a>
+                </div>
+
+                <div class="doc-card">
+                    <div class="doc-icon">🔌</div>
+                    <span class="doc-badge">Moodle Plugin</span>
+                    <h3>Plugin Hospedeiro Moodle</h3>
+                    <p>Guia do plugin <code>local_h5pchapteraccess</code>: instalação, schemas de banco de dados, permissões, backup/restore e troubleshooting.</p>
+                    <a href="../local/h5pchapteraccess/README.md" class="doc-link">Acessar local/h5pchapteraccess/README.md →</a>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Pedagogical Benefits Section -->
-    <section class="section">
+    <section id="beneficios" class="section" style="background: var(--bg-surface); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">
         <div class="container">
             <h2 style="font-family: var(--font-heading); font-size: 1.8rem; text-align: center; margin-bottom: 1.5rem;">
                 Benefícios Pedagógicos & Engajamento dos Estudantes
             </h2>
             
             <div class="pedagogical-highlight">
-                💡 <strong>Dica Pedagógica:</strong> Ideal para e-books didáticos com exercícios formativos incorporados ao final de cada capítulo.
+                💡 <strong>Dica Pedagógica:</strong> Ideal para e-books didáticos com liberação sequencial ou condicional de capítulos mediante conclusão de atividades pré-requisito ou critérios de nota.
             </div>
 
             <div class="card-grid">
                 <div class="info-card">
                     <h3>🎓 Para o Professor</h3>
-                    <p>Autoria simplificada de capítulos interativos com ricas opções de layout.</p>
+                    <p>Autoria simplificada no H5P aliada à flexibilidade da Availability API do Moodle para controlar o ritmo de aprendizagem (pacing).</p>
                 </div>
                 <div class="info-card">
                     <h3>🚀 Para o Estudante</h3>
-                    <p>Leitura ativa e envolvente com verificação imediata do aprendizado.</p>
+                    <p>Leitura ativa com navegação guiada, feedback claro sobre pré-requisitos não atingidos e rastreamento de progresso justo.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Mandatory Team & Author Section -->
+    <!-- SEÇÕES OBRIGATÓRIAS DE EQUIPE E AUTORIA -->
     <div class="team-author-wrapper">
         <div class="container">
-            
+
             <!-- Section A: Equipe de Desenvolvimento -->
-            <div class="section-header" style="text-align: center; margin-bottom: 2rem;">
-                <h2 style="font-family: var(--font-heading); font-size: 1.6rem;">Equipe de Desenvolvimento</h2>
+            <div class="section-header" style="text-align: center; margin-bottom: 2.5rem;">
+                <span class="package-tag tag-custom" style="display: inline-block; margin-bottom: 0.5rem;">Pessoas por Trás do Projeto</span>
+                <h2 class="section-title">Equipe de Desenvolvimento</h2>
             </div>
 
-            <div class="team-list">
+            <div class="team-list" style="margin-bottom: 3.5rem;">
+                <div class="team-card">
+                    <img src="https://h5p-companion.github.io/assets/img/wagner.oliveira.png" alt="Wagner de Oliveira" class="team-card-avatar">
+                    <div class="team-card-info">
+                        <h4>Wagner de Oliveira</h4>
+                        <p>Product Owner</p>
+                        <p><a href="mailto:wagner.oliveira@ifrn.edu.br">wagner.oliveira@ifrn.edu.br</a></p>
+                    </div>
+                </div>
                 <div class="team-card">
                     <img src="assets/img/kelsoncm.jpg" alt="Kelson da Costa Medeiros" class="team-card-avatar">
-                    <div>
-                        <h4 style="font-family: var(--font-heading); font-size: 1.05rem;">Kelson da Costa Medeiros</h4>
-                        <p style="font-size: 0.85rem; color: var(--text-secondary);">Tech Leader & Lead Developer</p>
-                        <p style="font-size: 0.85rem;"><a href="mailto:kelson.medeiros@ifrn.edu.br">kelson.medeiros@ifrn.edu.br</a></p>
+                    <div class="team-card-info">
+                        <h4>Kelson da Costa Medeiros</h4>
+                        <p>Tech Leader</p>
+                        <p><a href="mailto:kelsoncm@gmail.com">kelsoncm@gmail.com</a></p>
                     </div>
                 </div>
             </div>
 
-            <!-- Section B: Autor da Página -->
+            <div class="team-list" style="margin-bottom: 3.5rem;">
+                <div class="team-card">
+                    <div class="team-card-info">
+                        <h4>Luiz Gustavo O. Rocha</h4>
+                        <p>Developer</p>
+                        <p><a href="mailto:luizgustavo.orocha1@gmail.com">luizgustavo.orocha1@gmail.com</a></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section C: Autor da Página -->
+            <div class="section-header" style="text-align: center; margin-bottom: 2.5rem;">
+                <h2 class="section-title">Autores da documentação</h2>
+            </div>
             <div class="author-box">
                 <div class="author-header">
                     <img src="assets/img/kelsoncm.jpg" alt="Kelson da Costa Medeiros" class="author-avatar">
                     <div class="author-info">
                         <h3>Kelson da Costa Medeiros</h3>
-                        <div class="author-role">Tech Leader & Liderança da H5P Companion</div>
+                        <div class="author-role">Tech Leader & Autoria da documentação</div>
                         <div class="author-affiliation">
                             Professor e Pesquisador do <a href="https://ead.ifrn.edu.br/" target="_blank" rel="noopener">Campus Natal-Zona Leste (ZL)</a> do <a href="https://portal.ifrn.edu.br/" target="_blank" rel="noopener">Instituto Federal do Rio Grande do Norte (IFRN)</a>.
                         </div>
@@ -95,12 +174,24 @@
                 </div>
 
                 <div class="academic-badges">
-                    <a href="https://linkedin.com/in/kelsoncm" target="_blank" rel="noopener" class="badge-link">💼 LinkedIn</a>
-                    <a href="https://github.com/kelsoncm" target="_blank" rel="noopener" class="badge-link">🐙 GitHub</a>
-                    <a href="https://orcid.org/0000-0001-6749-4656" target="_blank" rel="noopener" class="badge-link">🆔 ORCID</a>
-                    <a href="https://loop.frontiersin.org/people/1858110/overview" target="_blank" rel="noopener" class="badge-link">🔬 Loop</a>
-                    <a href="http://lattes.cnpq.br/1734494254835148" target="_blank" rel="noopener" class="badge-link">📄 Currículo Lattes</a>
-                    <a href="https://independent.academia.edu/kelsoncm" target="_blank" rel="noopener" class="badge-link">🎓 Academia.edu</a>
+                    <a href="https://linkedin.com/in/kelsoncm" target="_blank" rel="noopener" class="badge-link">
+                        💼 LinkedIn
+                    </a>
+                    <a href="https://github.com/kelsoncm" target="_blank" rel="noopener" class="badge-link">
+                        🐙 GitHub
+                    </a>
+                    <a href="https://orcid.org/0000-0001-6749-4656" target="_blank" rel="noopener" class="badge-link">
+                        🆔 ORCID
+                    </a>
+                    <a href="https://loop.frontiersin.org/people/1858110/overview" target="_blank" rel="noopener" class="badge-link">
+                        🔬 Loop
+                    </a>
+                    <a href="http://lattes.cnpq.br/1734494254835148" target="_blank" rel="noopener" class="badge-link">
+                        📄 Currículo Lattes
+                    </a>
+                    <a href="https://independent.academia.edu/kelsoncm" target="_blank" rel="noopener" class="badge-link">
+                        🎓 Academia.edu
+                    </a>
                 </div>
             </div>
 
@@ -117,3 +208,4 @@
     <script src="js/script.js"></script>
 </body>
 </html>
+
