@@ -103,5 +103,11 @@ function xmldb_local_h5pchapteraccess_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026072000, 'local', 'h5pchapteraccess');
     }
 
+    if ($oldversion < 2026080400) {
+        // Streamline the teacher interface and embed the standard availability
+        // editor on the management page; no database schema change is required.
+        upgrade_plugin_savepoint(true, 2026080400, 'local', 'h5pchapteraccess');
+    }
+
     return true;
 }

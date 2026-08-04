@@ -1,0 +1,59 @@
+{{!
+    @template local_h5pchapteraccess/chapter_list
+
+    Concise teacher-facing chapter selector.
+}}
+<section class="local-h5pca-chapters" aria-labelledby="local-h5pca-chapters-heading">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-3">
+        <div>
+            <h2 class="h3 mb-1" id="local-h5pca-chapters-heading">
+                {{#str}} activechapters, local_h5pchapteraccess {{/str}}
+            </h2>
+            <p class="text-muted mb-0">{{#str}} chapterlistintro, local_h5pchapteraccess {{/str}}</p>
+        </div>
+    </div>
+
+    {{^haschapters}}
+        <div class="alert alert-info">{{#str}} noactivechapters, local_h5pchapteraccess {{/str}}</div>
+    {{/haschapters}}
+
+    {{#haschapters}}
+        <div class="local-h5pca-chapter-list">
+            {{#chapters}}
+                <article class="local-h5pca-chapter-card {{modeclass}} {{#selected}}is-selected{{/selected}}">
+                    <div class="local-h5pca-chapter-number" aria-hidden="true">{{position}}</div>
+                    <div class="local-h5pca-chapter-content">
+                        <div class="d-flex flex-column flex-md-row justify-content-between gap-2">
+                            <div>
+                                <h3 class="h5 mb-1">{{title}}</h3>
+                                <span class="local-h5pca-mode-label">{{modelabel}}</span>
+                            </div>
+                            {{#stable}}
+                                <a class="btn {{#selected}}btn-primary{{/selected}}{{^selected}}btn-outline-primary{{/selected}} align-self-md-start"
+                                   href="{{configureurl}}">
+                                    {{#selected}}
+                                        {{#str}} editingchapter, local_h5pchapteraccess {{/str}}
+                                    {{/selected}}
+                                    {{^selected}}
+                                        {{#str}} configurechapter, local_h5pchapteraccess {{/str}}
+                                    {{/selected}}
+                                </a>
+                            {{/stable}}
+                        </div>
+                        {{#isconditional}}
+                            <div class="local-h5pca-condition-summary mt-2">
+                                <strong>{{#str}} conditionssummary, local_h5pchapteraccess {{/str}}:</strong>
+                                {{{conditionsummaryhtml}}}
+                            </div>
+                        {{/isconditional}}
+                        {{#unstable}}
+                            <div class="alert alert-warning mt-2 mb-0" role="alert">
+                                {{#str}} unstableidteachershort, local_h5pchapteraccess {{/str}}
+                            </div>
+                        {{/unstable}}
+                    </div>
+                </article>
+            {{/chapters}}
+        </div>
+    {{/haschapters}}
+</section>

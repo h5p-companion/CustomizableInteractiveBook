@@ -99,13 +99,13 @@ Open:
 
 The page requires login and `local/h5pchapteraccess:manage`, validates that the module is `h5pactivity`, confirms the main library, and synchronizes the manifest. It supports:
 
-- an installation checklist showing the deployed H5P version, generated AMD bridge, integration state, and number of configured rules;
+- a concise status overview that only exposes deployment warnings when action is required;
 - enabling or disabling integration for the activity;
 - an activity-level default locked message;
 - explicit re-synchronization;
-- current and inactive chapter diagnostics;
-- chapter access mode and message editing;
-- a separate standard Availability API editor.
+- a focused list of active chapters without technical IDs or hashes;
+- inline chapter access mode and message editing;
+- the standard Availability API editor on the same page. Selecting `conditional` reveals its options immediately without an intermediate save.
 
 Messages are `PARAM_TEXT` plain text. A chapter-specific message wins over visible condition information, which wins over the activity default and then the plugin default.
 

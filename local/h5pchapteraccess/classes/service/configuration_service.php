@@ -226,27 +226,17 @@ final class configuration_service {
     }
 
     /**
-     * Build safe initial data for the dynamic Moodle form.
+     * Build safe initial data for the activity-level settings form.
      *
      * @param \stdClass $configuration Configuration returned by get_configuration()
      * @return \stdClass
      */
     public function get_form_data(\stdClass $configuration): \stdClass {
-        $data = (object) [
+        return (object) [
             'cmid' => (int) $configuration->book->cmid,
             'enabled' => (int) $configuration->book->enabled,
             'defaultmessage' => $configuration->book->defaultmessage ?? '',
         ];
-
-        foreach ($configuration->activechapters as $chapter) {
-            if (!(bool) $chapter->stableid || !in_array($chapter->accessmode, self::EDITABLE_MODES, true)) {
-                continue;
-            }
-            $data->{'accessmode_' . $chapter->id} = $chapter->accessmode;
-            $data->{'lockedmessage_' . $chapter->id} = $chapter->lockedmessage ?? '';
-        }
-
-        return $data;
     }
 
     /**
@@ -300,6 +290,29 @@ final class configuration_service {
             $this->db->update_record('local_h5pca_chapter', $chapter);
         }
 
+        $transaction->allow_commit();
+    }
+
+    /**
+     * Save only the concise activity-level settings form.
+     *
+     * Chapter rules are edited by {@see chapter_configuration_service}; keeping
+     * this operation separate prevents an unrelated general save from touching
+     * chapter timestamps or revalidating stored conditional rules.
+     *
+     * @param int $cmid Course module ID
+     * @param \stdClass $data Validated form data
+     */
+    public function save_activity_settings(int $cmid, \stdClass $data): void {
+        $context = \context_module::instance($cmid);
+        require_capability('local/h5pchapteraccess:manage', $context);
+
+        $transaction = $this->db->start_delegated_transaction();
+        $book = $this->db->get_record('local_h5pca_book', ['cmid' => $cmid], '*', MUST_EXIST);
+        $book->enabled = empty($data->enabled) ? 0 : 1;
+        $book->defaultmessage = $this->normalise_message($data->defaultmessage ?? '');
+        $book->timemodified = time();
+        $this->db->update_record('local_h5pca_book', $book);
         $transaction->allow_commit();
     }
 

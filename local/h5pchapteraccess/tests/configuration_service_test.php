@@ -124,6 +124,44 @@ final class configuration_service_test extends \advanced_testcase {
         $this->assertNull($savedlegacy->lockedmessage);
     }
 
+    /** General settings do not rewrite an existing chapter rule. */
+    public function test_save_activity_settings_does_not_touch_chapters(): void {
+        global $DB;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+        $cmid = $this->create_h5p_activity_cmid();
+        $service = new configuration_service();
+        $service->synchronize_manifest($this->manifest($cmid, [
+            new chapter('uuid-stable', 'Stable title', 0, true),
+        ]));
+
+        $book = $DB->get_record('local_h5pca_book', ['cmid' => $cmid], '*', MUST_EXIST);
+        $chapter = $DB->get_record(
+            'local_h5pca_chapter',
+            ['bookid' => $book->id, 'chapteruuid' => 'uuid-stable'],
+            '*',
+            MUST_EXIST
+        );
+        $chapter->accessmode = 'locked';
+        $chapter->lockedmessage = 'Keep this message';
+        $chapter->timemodified = 123;
+        $DB->update_record('local_h5pca_chapter', $chapter);
+
+        $service->save_activity_settings($cmid, (object) [
+            'enabled' => 0,
+            'defaultmessage' => 'New default',
+        ]);
+
+        $savedbook = $DB->get_record('local_h5pca_book', ['id' => $book->id], '*', MUST_EXIST);
+        $savedchapter = $DB->get_record('local_h5pca_chapter', ['id' => $chapter->id], '*', MUST_EXIST);
+        $this->assertSame(0, (int) $savedbook->enabled);
+        $this->assertSame('New default', $savedbook->defaultmessage);
+        $this->assertSame('locked', $savedchapter->accessmode);
+        $this->assertSame('Keep this message', $savedchapter->lockedmessage);
+        $this->assertSame(123, (int) $savedchapter->timemodified);
+    }
+
     /**
      * A specific nonempty message wins; otherwise the activity default is used.
      */

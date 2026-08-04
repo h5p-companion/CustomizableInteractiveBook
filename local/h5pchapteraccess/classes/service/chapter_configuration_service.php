@@ -155,7 +155,9 @@ final class chapter_configuration_service {
 
         if (property_exists($data, 'availabilityconditionsjson')) {
             $availability = trim((string) $data->availabilityconditionsjson);
-            $this->validate_availability_json($availability, $course, $cm, $chapter);
+            if ($mode === 'conditional') {
+                $this->validate_availability_json($availability, $course, $cm, $chapter);
+            }
             $chapter->availabilityjson = $availability === '' ? null : $availability;
         } else if ($mode === 'conditional') {
             throw new \invalid_parameter_exception('Conditional mode requires availability form data.');
@@ -170,7 +172,7 @@ final class chapter_configuration_service {
     }
 
     /**
-     * Add display-only mode, summary and edit URL values to active chapters.
+     * Add display-only mode and condition summary values to active chapters.
      *
      * @param \stdClass[] $chapters Chapter records
      * @param \stdClass $course Course record
@@ -183,13 +185,6 @@ final class chapter_configuration_service {
             $item = clone $chapter;
             $item->accessmodelabel = $this->get_mode_label((string) $chapter->accessmode);
             $item->conditionsummaryhtml = $this->get_condition_summary($chapter, $course, $cm);
-            $item->editurl = null;
-            if ((bool) $chapter->active && (bool) $chapter->stableid) {
-                $item->editurl = new \moodle_url('/local/h5pchapteraccess/edit.php', [
-                    'cmid' => $cm->id,
-                    'chapter' => $chapter->chapteruuid,
-                ]);
-            }
             $prepared[] = $item;
         }
         return $prepared;

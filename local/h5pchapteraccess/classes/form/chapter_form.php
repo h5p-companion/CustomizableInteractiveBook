@@ -43,47 +43,58 @@ final class chapter_form extends \moodleform {
         $mform->addElement('hidden', 'chapter', (string) $this->_customdata['chapter']->chapteruuid);
         $mform->setType('chapter', PARAM_RAW_TRIMMED);
 
-        $mform->addElement('header', 'chaptersettings', get_string('chaptersettings', 'local_h5pchapteraccess'));
+        $modeoptions = [
+            'open' => get_string('modeopen', 'local_h5pchapteraccess'),
+            'locked' => get_string('modelocked', 'local_h5pchapteraccess'),
+        ];
+        if (!empty($CFG->enableavailability)) {
+            $modeoptions['conditional'] = get_string('modeconditional', 'local_h5pchapteraccess');
+        }
+
         $mform->addElement(
             'select',
             'accessmode',
             get_string('accessmode', 'local_h5pchapteraccess'),
-            [
-                'open' => get_string('modeopen', 'local_h5pchapteraccess'),
-                'locked' => get_string('modelocked', 'local_h5pchapteraccess'),
-                'conditional' => get_string('modeconditional', 'local_h5pchapteraccess'),
-            ]
+            $modeoptions
         );
         $mform->setType('accessmode', PARAM_ALPHA);
+        $mform->addHelpButton('accessmode', 'accessmode', 'local_h5pchapteraccess');
 
         $mform->addElement(
             'textarea',
             'lockedmessage',
             get_string('specificmessage', 'local_h5pchapteraccess'),
-            ['rows' => 4, 'cols' => 60]
+            [
+                'rows' => 3,
+                'cols' => 60,
+                'placeholder' => get_string('usesdefaultmessage', 'local_h5pchapteraccess'),
+            ]
         );
         $mform->setType('lockedmessage', PARAM_TEXT);
         $mform->addHelpButton('lockedmessage', 'specificmessage', 'local_h5pchapteraccess');
-
-        $mform->addElement(
-            'advcheckbox',
-            'showrestriction',
-            get_string('showrestriction', 'local_h5pchapteraccess')
-        );
-        $mform->addHelpButton('showrestriction', 'showrestriction', 'local_h5pchapteraccess');
+        $mform->hideIf('lockedmessage', 'accessmode', 'eq', 'open');
 
         if (!empty($CFG->enableavailability)) {
             $mform->addElement(
-                'header',
-                'availabilityconditionsheader',
-                get_string('restrictaccess', 'availability')
+                'static',
+                'conditionalheading',
+                '',
+                \html_writer::tag('h4', s(get_string('conditionalsettings', 'local_h5pchapteraccess')), [
+                    'class' => 'h5 mb-1',
+                ])
             );
             $mform->addElement(
                 'static',
-                'availabilitypreservationnotice',
+                'conditionalintro',
                 '',
-                s(get_string('availabilitypreservationnotice', 'local_h5pchapteraccess'))
+                s(get_string('conditionalinlineintro', 'local_h5pchapteraccess'))
             );
+            $mform->addElement(
+                'advcheckbox',
+                'showrestriction',
+                get_string('showrestrictionshort', 'local_h5pchapteraccess')
+            );
+            $mform->addHelpButton('showrestriction', 'showrestriction', 'local_h5pchapteraccess');
             $mform->addElement(
                 'textarea',
                 'availabilityconditionsjson',
@@ -95,17 +106,20 @@ final class chapter_form extends \moodleform {
                 'd-flex justify-content-center py-5 icon-size-5',
                 'availabilityconditions-loading'
             );
-            $mform->addElement('html', $loadingcontainer);
-        } else {
-            $warning = \html_writer::div(
-                s(get_string('availabilitydisabled', 'local_h5pchapteraccess')),
-                'alert alert-warning',
-                ['role' => 'alert']
-            );
-            $mform->addElement('static', 'availabilitydisabled', '', $warning);
+            $mform->addElement('static', 'conditionalloading', '', $loadingcontainer);
+
+            foreach ([
+                'conditionalheading',
+                'conditionalintro',
+                'showrestriction',
+                'availabilityconditionsjson',
+                'conditionalloading',
+            ] as $elementname) {
+                $mform->hideIf($elementname, 'accessmode', 'neq', 'conditional');
+            }
         }
 
-        $this->add_action_buttons(true, get_string('savechanges'));
+        $this->add_action_buttons(true, get_string('savechapteraccess', 'local_h5pchapteraccess'));
     }
 
     /**
@@ -140,7 +154,7 @@ final class chapter_form extends \moodleform {
             $errors['accessmode'] = get_string('availabilitydisabled', 'local_h5pchapteraccess');
         }
 
-        if (!empty($CFG->enableavailability)) {
+        if (!empty($CFG->enableavailability) && ($data['accessmode'] ?? '') === 'conditional') {
             try {
                 \core_availability\frontend::report_validation_errors($data, $errors);
             } catch (\coding_exception $exception) {

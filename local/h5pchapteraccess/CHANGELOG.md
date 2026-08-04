@@ -2,6 +2,14 @@
 
 All notable changes to `local_h5pchapteraccess` are documented here.
 
+## 1.0.9 - 2026-08-04
+
+- Replaced the technical management view with a focused teacher-facing chapter list.
+- Embedded the standard Moodle Availability API editor on the same management page.
+- Made conditional options appear immediately when Conditional is selected, without an intermediate save.
+- Kept deployment diagnostics visible only when they require teacher or administrator action.
+- Added responsive, plugin-scoped presentation styles without changing policy evaluation or the H5P runtime.
+
 ## 1.0.8 - 2026-07-20
 
 - Added visible deployment checks for the minimum compatible H5P library, generated Moodle AMD bridge, activity integration, and configured chapter rules.

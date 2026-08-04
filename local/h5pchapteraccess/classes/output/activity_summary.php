@@ -16,8 +16,6 @@
 
 namespace local_h5pchapteraccess\output;
 
-use local_h5pchapteraccess\dto\manifest;
-
 /**
  * Template context for the activity and manifest summary.
  *
@@ -33,9 +31,6 @@ final class activity_summary implements \renderable, \templatable {
     /** @var \context_module Activity context. */
     private \context_module $context;
 
-    /** @var manifest Current manifest. */
-    private manifest $manifest;
-
     /** @var array Deployment diagnostics. */
     private array $diagnostics;
 
@@ -47,20 +42,17 @@ final class activity_summary implements \renderable, \templatable {
      *
      * @param \stdClass $activity h5pactivity record
      * @param \context_module $context Activity context
-     * @param manifest $manifest Current manifest
      * @param array $diagnostics Deployment diagnostics
      * @param \moodle_url $activityurl Activity view URL
      */
     public function __construct(
         \stdClass $activity,
         \context_module $context,
-        manifest $manifest,
         array $diagnostics,
         \moodle_url $activityurl
     ) {
         $this->activity = $activity;
         $this->context = $context;
-        $this->manifest = $manifest;
         $this->diagnostics = $diagnostics;
         $this->activityurl = $activityurl;
     }
@@ -72,55 +64,14 @@ final class activity_summary implements \renderable, \templatable {
      * @return \stdClass
      */
     public function export_for_template(\renderer_base $output): \stdClass {
-        $libraryversion = (string) $this->diagnostics['libraryversion'];
-        if ($libraryversion === '') {
-            $libraryvalue = get_string('libraryversionunknown', 'local_h5pchapteraccess');
-        } else {
-            $libraryvalue = get_string('libraryversionvalue', 'local_h5pchapteraccess', (object) [
-                'installed' => $libraryversion,
-                'minimum' => $this->diagnostics['minimumlibraryversion'],
-            ]);
+        $deploymentissues = [];
+        if (!$this->diagnostics['librarycompatible']) {
+            $deploymentissues[] = get_string('libraryincompatibleaction', 'local_h5pchapteraccess');
         }
-
-        $checks = [
-            $this->check(
-                get_string('libraryruntime', 'local_h5pchapteraccess'),
-                $libraryvalue,
-                (bool) $this->diagnostics['librarycompatible'],
-                true
-            ),
-            $this->check(
-                get_string('bridgeasset', 'local_h5pchapteraccess'),
-                get_string(
-                    $this->diagnostics['bridgeassetavailable'] ? 'bridgeassetpresent' : 'bridgeassetmissing',
-                    'local_h5pchapteraccess'
-                ),
-                (bool) $this->diagnostics['bridgeassetavailable'],
-                true
-            ),
-            $this->check(
-                get_string('integrationstatus', 'local_h5pchapteraccess'),
-                get_string(
-                    $this->diagnostics['integrationenabled'] ? 'statusenabled' : 'statusdisabled',
-                    'local_h5pchapteraccess'
-                ),
-                (bool) $this->diagnostics['integrationenabled']
-            ),
-            $this->check(
-                get_string('configuredrules', 'local_h5pchapteraccess'),
-                get_string('configuredrulesvalue', 'local_h5pchapteraccess', (object) [
-                    'restricted' => $this->diagnostics['restrictedcount'],
-                    'total' => $this->diagnostics['activecount'],
-                ]),
-                $this->diagnostics['restrictedcount'] > 0
-            ),
-        ];
-
-        $haserror = !$this->diagnostics['librarycompatible']
-            || !$this->diagnostics['bridgeassetavailable'];
-        $overviewclass = $haserror
-            ? 'alert-danger'
-            : ($this->diagnostics['ready'] ? 'alert-success' : 'alert-warning');
+        if (!$this->diagnostics['bridgeassetavailable']) {
+            $deploymentissues[] = get_string('bridgeassetmissing', 'local_h5pchapteraccess');
+        }
+        $integrationenabled = (bool) $this->diagnostics['integrationenabled'];
 
         return (object) [
             'activityname' => strip_tags(format_string(
@@ -128,52 +79,22 @@ final class activity_summary implements \renderable, \templatable {
                 true,
                 ['context' => $this->context]
             )),
-            'cmid' => $this->manifest->get_cmid(),
-            'contentid' => $this->manifest->get_content_id(),
-            'contenthash' => $this->manifest->get_content_hash(),
-            'manifesthash' => $this->manifest->get_manifest_hash(),
-            'activecount' => $this->diagnostics['activecount'],
             'opencount' => $this->diagnostics['opencount'],
             'lockedcount' => $this->diagnostics['lockedcount'],
             'conditionalcount' => $this->diagnostics['conditionalcount'],
-            'unstablecount' => $this->diagnostics['unstablecount'],
-            'hasunstable' => $this->diagnostics['unstablecount'] > 0,
-            'overviewclass' => $overviewclass,
-            'overviewtitle' => get_string(
-                $this->diagnostics['ready'] ? 'configurationreadytitle' : 'configurationattentiontitle',
+            'hasrules' => $this->diagnostics['restrictedcount'] > 0,
+            'statusclass' => $integrationenabled ? 'is-active' : 'is-paused',
+            'statustitle' => get_string(
+                $integrationenabled ? 'accessactive' : 'accesspaused',
                 'local_h5pchapteraccess'
             ),
-            'overviewmessage' => get_string(
-                $this->diagnostics['ready'] ? 'configurationready' : 'configurationneedsattention',
+            'statusmessage' => get_string(
+                $integrationenabled ? 'accessactivemessage' : 'accesspausedmessage',
                 'local_h5pchapteraccess'
             ),
-            'checks' => $checks,
+            'hasdeploymentissues' => $deploymentissues !== [],
+            'deploymentissues' => $deploymentissues,
             'activityurl' => $this->activityurl->out(false),
-            'deploymentnotice' => get_string('deploymentnotice', 'local_h5pchapteraccess'),
-            'studentviewnotice' => get_string('studentviewnotice', 'local_h5pchapteraccess'),
-        ];
-    }
-
-    /**
-     * Build one safe status row for the template.
-     *
-     * @param string $label Check label
-     * @param string $value Human-readable value
-     * @param bool $ok Whether the requirement is satisfied
-     * @param bool $error Whether failure prevents communication entirely
-     * @return array
-     */
-    private function check(string $label, string $value, bool $ok, bool $error = false): array {
-        return [
-            'label' => $label,
-            'value' => $value,
-            'statusclass' => $ok
-                ? 'bg-success text-white'
-                : ($error ? 'bg-danger text-white' : 'bg-warning text-dark'),
-            'statuslabel' => get_string(
-                $ok ? 'checkok' : ($error ? 'checkerror' : 'checkattention'),
-                'local_h5pchapteraccess'
-            ),
         ];
     }
 }

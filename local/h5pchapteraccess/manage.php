@@ -28,7 +28,7 @@ unset($configpath);
 
 use local_h5pchapteraccess\form\manage_form;
 use local_h5pchapteraccess\output\activity_summary;
-use local_h5pchapteraccess\output\inactive_chapters;
+use local_h5pchapteraccess\output\chapter_list;
 use local_h5pchapteraccess\service\chapter_configuration_service;
 use local_h5pchapteraccess\service\configuration_service;
 use local_h5pchapteraccess\service\deployment_diagnostics;
@@ -36,6 +36,7 @@ use local_h5pchapteraccess\service\manifest_cache;
 
 $cmid = required_param('cmid', PARAM_INT);
 $action = optional_param('action', '', PARAM_ALPHA);
+$selectedid = optional_param('chapter', '', PARAM_RAW_TRIMMED);
 $service = new configuration_service();
 $activitydata = $service->require_manageable_activity($cmid);
 
@@ -92,9 +93,23 @@ $activechapters = $chapterservice->prepare_for_manage(
 );
 $form = new manage_form($pageurl, [
     'cmid' => $cmid,
-    'chapters' => $activechapters,
 ]);
 $form->set_data($service->get_form_data($configuration));
+
+$selectedchapter = null;
+$chapterform = null;
+if ($selectedid !== '') {
+    $selectedchapter = $chapterservice->require_editable_chapter($cmid, $selectedid, $manifest);
+    $chapterurl = new moodle_url($pageurl, ['chapter' => $selectedid]);
+    $chapterurl->set_anchor('chapter-editor');
+    $chapterform = new \local_h5pchapteraccess\form\chapter_form($chapterurl, [
+        'cmid' => $cmid,
+        'chapter' => $selectedchapter,
+        'course' => $activitydata->course,
+        'cm' => $activitydata->cm,
+    ]);
+    $chapterform->set_data($chapterservice->get_form_data($cmid, $selectedchapter));
+}
 
 if ($form->is_cancelled()) {
     redirect($activityurl);
@@ -102,10 +117,25 @@ if ($form->is_cancelled()) {
 
 if ($data = $form->get_data()) {
     require_sesskey();
-    $service->save($cmid, $data);
+    $service->save_activity_settings($cmid, $data);
     redirect(
         $pageurl,
         get_string('configurationsaved', 'local_h5pchapteraccess'),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+}
+
+if ($chapterform !== null && $chapterform->is_cancelled()) {
+    redirect($pageurl);
+}
+
+if ($chapterform !== null && $chapterdata = $chapterform->get_data()) {
+    require_sesskey();
+    $chapterservice->save($cmid, $selectedid, $chapterdata);
+    redirect(
+        $chapterurl,
+        get_string('chapterconfigurationsaved', 'local_h5pchapteraccess'),
         null,
         \core\output\notification::NOTIFY_SUCCESS
     );
@@ -116,7 +146,6 @@ echo $OUTPUT->header();
 $summary = new activity_summary(
     $activitydata->activity,
     $activitydata->context,
-    $manifest,
     (new deployment_diagnostics())->inspect(
         $manifest,
         $configuration->book,
@@ -129,20 +158,63 @@ echo $OUTPUT->render_from_template(
     $summary->export_for_template($OUTPUT)
 );
 
+echo html_writer::start_div('card mb-4');
+echo html_writer::start_div('card-body');
+echo $OUTPUT->heading(get_string('generalsettings', 'local_h5pchapteraccess'), 2, 'h4 mb-1');
+echo html_writer::tag('p', s(get_string('generalsettingsintro', 'local_h5pchapteraccess')), [
+    'class' => 'text-muted mb-3',
+]);
+$form->display();
+echo html_writer::end_div();
+echo html_writer::end_div();
+
+$chapterlist = new chapter_list(
+    $activechapters,
+    $activitydata->context,
+    $pageurl,
+    $selectedid
+);
+echo $OUTPUT->render_from_template(
+    'local_h5pchapteraccess/chapter_list',
+    $chapterlist->export_for_template($OUTPUT)
+);
+
+if ($chapterform !== null && $selectedchapter !== null) {
+    echo html_writer::start_tag('section', [
+        'id' => 'chapter-editor',
+        'class' => 'card local-h5pca-editor mt-4 mb-4',
+        'aria-labelledby' => 'local-h5pca-editor-heading',
+    ]);
+    echo html_writer::start_div('card-body');
+    echo html_writer::tag('p', get_string(
+        'chapterpositionheading',
+        'local_h5pchapteraccess',
+        (int) $selectedchapter->positioncache + 1
+    ), ['class' => 'text-muted mb-1']);
+    echo html_writer::tag('h2', format_string(
+        (string) $selectedchapter->titlecache,
+        true,
+        ['context' => $activitydata->context]
+    ), [
+        'id' => 'local-h5pca-editor-heading',
+        'class' => 'h3 mb-2',
+    ]);
+    echo html_writer::tag('p', s(get_string('chaptereditorintro', 'local_h5pchapteraccess')), [
+        'class' => 'text-muted mb-4',
+    ]);
+    $chapterform->display();
+    echo html_writer::end_div();
+    echo html_writer::end_tag('section');
+}
+
 $syncurl = new moodle_url($pageurl, ['action' => 'sync', 'sesskey' => sesskey()]);
+echo html_writer::start_div('text-end mb-3');
 echo $OUTPUT->single_button(
     $syncurl,
     get_string('synchronizeagain', 'local_h5pchapteraccess'),
     'post',
-    ['class' => 'mb-3']
+    ['class' => 'btn-sm']
 );
-
-$form->display();
-
-$inactive = new inactive_chapters($configuration->inactivechapters);
-echo $OUTPUT->render_from_template(
-    'local_h5pchapteraccess/inactive_chapters',
-    $inactive->export_for_template($OUTPUT)
-);
+echo html_writer::end_div();
 
 echo $OUTPUT->footer();
