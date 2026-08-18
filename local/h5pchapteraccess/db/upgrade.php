@@ -109,5 +109,11 @@ function xmldb_local_h5pchapteraccess_upgrade(int $oldversion): bool {
         upgrade_plugin_savepoint(true, 2026080400, 'local', 'h5pchapteraccess');
     }
 
+    if ($oldversion < 2026080700) {
+        // Refresh hook and language caches for the verified production package;
+        // no database schema change is required.
+        upgrade_plugin_savepoint(true, 2026080700, 'local', 'h5pchapteraccess');
+    }
+
     return true;
 }

@@ -27,6 +27,16 @@ This solution has two independent deployable artifacts: the Moodle plugin and th
    <moodle>/local/h5pchapteraccess
    ```
 
+   To create the distributable ZIP on Windows, run this from the repository root:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts/package-moodle-plugin.ps1
+   ```
+
+   The command validates the English and Brazilian Portuguese language files,
+   both compiled AMD bridge modules, hook registration, AJAX service definition
+   and the ZIP root before creating `release/h5pchapteraccess-<version>.zip`.
+
 4. From the Moodle root, run:
 
    ```bash
@@ -35,6 +45,10 @@ This solution has two independent deployable artifacts: the Moodle plugin and th
    ```
 
    Alternatively, complete the standard upgrade from **Site administration → Notifications**.
+
+   Both steps are required after replacing plugin files. The version upgrade
+   refreshes Moodle's plugin and hook definitions; purging caches makes new
+   language strings and AMD modules visible immediately.
 
 5. Open a compatible H5P activity as a manager or editing teacher and select **Chapter access** in the activity settings navigation.
 6. On that Moodle installation, enable the integration and configure the chapters. The records in `local_h5pca_book` and `local_h5pca_chapter` belong to the site's database; copying the plugin folder or the H5P activity file does not copy those records.

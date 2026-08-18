@@ -2,6 +2,13 @@
 
 All notable changes to `local_h5pchapteraccess` are documented here.
 
+## 1.0.10 - 2026-08-07
+
+- Added a verified production packaging command that refuses to create a release without language files or compiled AMD bridge assets.
+- Advanced the plugin version so Moodle refreshes hook, language and JavaScript caches after deployment.
+- Made H5P embed-page detection compatible with Moodle installations hosted in a URL subdirectory.
+- Documented the exact post-deployment verification and cache-refresh procedure.
+
 ## 1.0.9 - 2026-08-04
 
 - Replaced the technical management view with a focused teacher-facing chapter list.

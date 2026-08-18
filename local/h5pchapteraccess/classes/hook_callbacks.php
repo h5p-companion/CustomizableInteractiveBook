@@ -46,7 +46,10 @@ final class hook_callbacks {
         if (!$cm || $cm->modname !== 'h5pactivity') {
             return;
         }
-        if ($page->url->get_path() !== '/h5p/embed.php') {
+        // Build the expected path through moodle_url so installations hosted
+        // below a URL subdirectory are handled in the same way as root sites.
+        $embedpath = (new \moodle_url('/h5p/embed.php'))->get_path();
+        if ($page->url->get_path() !== $embedpath) {
             return;
         }
         if (!$DB->record_exists('local_h5pca_book', ['cmid' => $cm->id, 'enabled' => 1])) {
