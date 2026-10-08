@@ -16,6 +16,26 @@ const getAvailableRuntimeChapters = (chapters = []) => {
 };
 
 /**
+ * Choose the initial chapter while honoring an explicit chapter selection.
+ *
+ * @param {object[]} chapters Internal chapter descriptors.
+ * @param {number} requestedIndex Index selected by a URL or saved state.
+ * @param {boolean} allowLockedSelection Whether an explicit URL may select a locked chapter.
+ * @return {number} Initial chapter index.
+ */
+const getInitialChapterIndex = (chapters, requestedIndex = -1, allowLockedSelection = true) => {
+  if (requestedIndex >= 0 && requestedIndex < chapters.length &&
+    (allowLockedSelection || (chapters[requestedIndex].available === true && chapters[requestedIndex].locked !== true))) {
+    return requestedIndex;
+  }
+
+  const firstAvailable = chapters.findIndex(chapter =>
+    chapter && !chapter.isSummary && chapter.available === true && chapter.locked !== true
+  );
+  return firstAvailable === -1 ? 0 : firstAvailable;
+};
+
+/**
  * Sum one H5P scoring method across available chapter runtimes.
  *
  * @param {object[]} chapters Internal chapter descriptors.
@@ -83,6 +103,7 @@ const getPreviousChapterState = (previousState, chapter) => {
 export {
   createAvailableChapterInstance,
   getAvailableRuntimeChapters,
+  getInitialChapterIndex,
   getPreviousChapterState,
   sumAvailableChapterMetric
 };

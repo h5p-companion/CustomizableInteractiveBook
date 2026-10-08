@@ -111,7 +111,7 @@ Fora de iframe, sem origem verificável, sem o plugin Moodle ou após resposta i
 
 ## Comportamento de capítulos bloqueados
 
-Um capítulo bloqueado continua focável e selecionável no menu para que a explicação possa ser lida. O placeholder usa estrutura acessível e insere a mensagem externa com `textContent`.
+Um capítulo bloqueado continua focável e selecionável no menu para que a explicação possa ser lida. O placeholder usa estrutura acessível e insere a mensagem externa com `textContent`. Sem capítulo salvo ou link direto, o livro abre no primeiro capítulo disponível. Um capítulo salvo anteriormente só é restaurado se continuar disponível; caso contrário, o livro inicia no primeiro disponível. Links diretos e cliques no menu ainda podem abrir o placeholder de um capítulo bloqueado.
 
 Para um capítulo bloqueado:
 
@@ -119,7 +119,7 @@ Para um capítulo bloqueado:
 - nenhuma biblioteca filha é inicializada e nenhum evento é propagado;
 - `instance` permanece `null` e `sections` permanece vazio;
 - próximo/anterior ignoram o capítulo;
-- menu, hash ou estado restaurado mostram somente o placeholder;
+- menu ou link direto mostram somente o placeholder;
 - pontuação, máximo, resposta, progresso, conclusão, resumo, reset, soluções, estado e xAPI o ignoram.
 
 Se todos estiverem bloqueados, o primeiro placeholder é mostrado, o resumo não é criado, as pontuações são zero e o livro não é concluído automaticamente.

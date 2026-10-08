@@ -2,6 +2,7 @@ import URLTools from './urltools';
 import Summary from "./summary";
 import {
   createAvailableChapterInstance,
+  getInitialChapterIndex,
   getPreviousChapterState
 } from './access/chapter-runtime';
 
@@ -268,6 +269,7 @@ class PageContent extends H5P.EventDispatcher {
       contentData.previousState :
       null;
     let urlFragments = URLTools.extractFragmentsFromURL(this.parent.validateFragments, this.parent.hashWindow);
+    const hasExplicitChapter = !!urlFragments.chapter;
     if (Object.keys(urlFragments).length === 0 && contentData && previousState && previousState.urlFragments) {
       urlFragments = previousState.urlFragments;
     }
@@ -391,31 +393,22 @@ class PageContent extends H5P.EventDispatcher {
       this.columnNodes.push(columnNode);
     }
 
-    // First chapter or cover page should be visible, except if the URL of previous state says otherwise.
-    if (urlFragments.chapter && urlFragments.h5pbookid == this.parent.contentId) {
-      const chapterIndex = this.findChapterIndex(urlFragments.chapter);
+    const requestedIndex = urlFragments.chapter && urlFragments.h5pbookid == this.parent.contentId ?
+      this.findChapterIndex(urlFragments.chapter) : -1;
+    const startChapter = getInitialChapterIndex(chapters, requestedIndex, hasExplicitChapter);
+    this.parent.setActiveChapter(startChapter);
 
-      if (chapterIndex === -1) {
-        // Chapter requested does not exist - do nothing, so that the cover page or first chapter (0 by default) is displayed.
-        return 0;
-      }
-
-      this.parent.setActiveChapter(chapterIndex);
-
-      if (urlFragments.section) {
-        const headerNumber = urlFragments.headerNumber;
-        window.requestAnimationFrame(() => {
-          this.redirectSection(urlFragments.section, headerNumber);
-          if (this.parent.hasCover()) {
-            this.parent.cover.removeCover();
-          }
-        });
-      }
-
-      return chapterIndex;
+    if (requestedIndex === startChapter && requestedIndex !== -1 && urlFragments.section) {
+      const headerNumber = urlFragments.headerNumber;
+      window.requestAnimationFrame(() => {
+        this.redirectSection(urlFragments.section, headerNumber);
+        if (this.parent.hasCover()) {
+          this.parent.cover.removeCover();
+        }
+      });
     }
 
-    return 0;
+    return startChapter;
   }
 
   /**

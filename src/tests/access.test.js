@@ -7,6 +7,7 @@ import AccessController from '../src/scripts/access/access-controller.js';
 import {
   createAvailableChapterInstance,
   getPreviousChapterState,
+  getInitialChapterIndex,
   sumAvailableChapterMetric
 } from '../src/scripts/access/chapter-runtime.js';
 import HostBridge, {
@@ -151,6 +152,44 @@ test('all blocked chapters produce no available navigation target', () => {
   assert.equal(controller.hasAvailableChapters(), false);
   assert.equal(controller.getAvailableCount(), 0);
   assert.equal(controller.getNextAvailableId('uuid-a'), null);
+});
+
+test('book starts at the first available chapter when earlier chapters are locked', () => {
+  const chapters = [
+    { available: false, locked: true },
+    { available: false, locked: true },
+    { available: true, locked: false },
+    { available: true, locked: false }
+  ];
+
+  assert.equal(getInitialChapterIndex(chapters), 2);
+});
+
+test('book keeps an explicitly selected locked chapter', () => {
+  const chapters = [
+    { available: false, locked: true },
+    { available: true, locked: false }
+  ];
+
+  assert.equal(getInitialChapterIndex(chapters, 0), 0);
+});
+
+test('book skips a locked chapter restored from saved state', () => {
+  const chapters = [
+    { available: false, locked: true },
+    { available: true, locked: false }
+  ];
+
+  assert.equal(getInitialChapterIndex(chapters, 0, false), 1);
+});
+
+test('book keeps the first placeholder when every chapter is locked', () => {
+  const chapters = [
+    { available: false, locked: true },
+    { available: false, locked: true }
+  ];
+
+  assert.equal(getInitialChapterIndex(chapters), 0);
 });
 
 test('locked chapter never invokes its runnable factory', () => {

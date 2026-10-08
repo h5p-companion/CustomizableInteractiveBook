@@ -59,7 +59,7 @@ The constructor sanitizes configuration, creates the manifest, and requests a po
 
 If the library runs outside Moodle, outside an iframe, without a known referrer origin, or without a responding plugin, every chapter remains available after the timeout.
 
-Available chapters create their real child with `H5P.newRunnable`. Locked chapters create only an accessible placeholder and keep `instance = null`; they do not bubble events or expose internal sections. Menu/hash selection may show the placeholder, while sequential navigation skips it.
+Available chapters create their real child with `H5P.newRunnable`. Locked chapters create only an accessible placeholder and keep `instance = null`; they do not bubble events or expose internal sections. The book opens at the first available chapter by default. A saved chapter is restored if it is still available; otherwise startup uses the first available chapter. Menu/hash selection may show a locked placeholder, while sequential navigation skips it. If all chapters are locked, startup shows the first placeholder.
 
 ## State and results
 

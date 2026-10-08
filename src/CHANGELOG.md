@@ -2,6 +2,11 @@
 
 All notable changes to `H5P.CustomizableInteractiveBook` are documented here. H5P library versions use `majorVersion.minorVersion.patchVersion` from `library.json`.
 
+## 1.0.36 - 2026-10-08
+
+- Open the first available chapter by default and when a saved chapter is now locked.
+- Preserve explicit links and menu access to locked chapter placeholders.
+
 ## 1.0.35 - 2026-07-16
 
 - Aligned the source library version with the already deployed HostBridge-enabled Moodle library.
